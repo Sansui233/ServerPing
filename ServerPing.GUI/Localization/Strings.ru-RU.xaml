@@ -9,6 +9,7 @@
     <sys:String x:Key="Settings.Language">Язык</sys:String>
     <sys:String x:Key="Settings.HibernateDuration">Сон UI в фоне (сек.)</sys:String>
     <sys:String x:Key="Settings.SilentStartup">Запускать тихо</sys:String>
+    <sys:String x:Key="Settings.LaunchAtStartup">Запускать при входе в Windows</sys:String>
     <sys:String x:Key="Settings.DataDirectory">Папка данных</sys:String>
     <sys:String x:Key="Settings.Open">Открыть</sys:String>
     <sys:String x:Key="Settings.TestNotification">Тест уведомления</sys:String>

@@ -20,6 +20,7 @@ public partial class SettingsDialog : Window
         PingIntervalTextBox.Text = settings.PingIntervalSeconds.ToString();
         FailureThresholdTextBox.Text = settings.FailureThreshold.ToString();
         SilentStartupCheckBox.IsChecked = settings.SilentStartup;
+        LaunchAtStartupCheckBox.IsChecked = settings.LaunchAtStartup;
         HibernateDurationTextBox.Text = settings.GuiHibernateDurationSeconds.ToString();
         LanguageComboBox.ItemsSource = LocalizationService.Languages;
         LanguageComboBox.SelectedValue = LocalizationService.Normalize(settings.Language);
@@ -118,6 +119,7 @@ public partial class SettingsDialog : Window
         settings.PingIntervalSeconds = interval;
         settings.FailureThreshold = threshold;
         settings.SilentStartup = SilentStartupCheckBox.IsChecked == true;
+        settings.LaunchAtStartup = LaunchAtStartupCheckBox.IsChecked == true;
         settings.GuiHibernateDurationSeconds = hibernate;
         settings.Language = LanguageComboBox.SelectedValue as string ?? LocalizationService.DefaultLanguage;
         return true;

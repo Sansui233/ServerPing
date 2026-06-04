@@ -9,6 +9,7 @@
     <sys:String x:Key="Settings.Language">语言</sys:String>
     <sys:String x:Key="Settings.HibernateDuration">后台运行时 UI 休眠时长（秒）</sys:String>
     <sys:String x:Key="Settings.SilentStartup">静默启动</sys:String>
+    <sys:String x:Key="Settings.LaunchAtStartup">开机自启</sys:String>
     <sys:String x:Key="Settings.DataDirectory">数据目录</sys:String>
     <sys:String x:Key="Settings.Open">打开</sys:String>
     <sys:String x:Key="Settings.TestNotification">测试通知</sys:String>

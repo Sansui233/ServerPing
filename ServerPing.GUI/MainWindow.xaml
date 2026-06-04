@@ -29,8 +29,11 @@
             </Grid.RowDefinitions>
 
             <!-- Title bar -->
-            <Grid Grid.Row="0" Background="{DynamicResource TitleBarBrush}"
-                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Border Grid.Row="0"
+                    Background="{DynamicResource TitleBarBrush}"
+                    BorderBrush="{DynamicResource BorderBrushDark}"
+                    BorderThickness="0,0,0,1">
+            <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -129,6 +132,7 @@
                           Width="13" Height="13" Stretch="Uniform" />
                 </Button>
             </Grid>
+            </Border>
 
             <!-- Server list -->
             <DataGrid Grid.Row="1"

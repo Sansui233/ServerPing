@@ -13,12 +13,17 @@ public class IpcServer : IDisposable
     private readonly CancellationTokenSource _cts = new();
     private readonly PingService _pingService;
     private readonly NotificationService _notificationService;
+    private readonly StartupRegistrationService _startupRegistrationService;
     private Task? _serverTask;
 
-    public IpcServer(PingService pingService, NotificationService notificationService)
+    public IpcServer(
+        PingService pingService,
+        NotificationService notificationService,
+        StartupRegistrationService startupRegistrationService)
     {
         _pingService = pingService;
         _notificationService = notificationService;
+        _startupRegistrationService = startupRegistrationService;
     }
 
     public void Start()
@@ -183,6 +188,7 @@ public class IpcServer : IDisposable
                     {
                         var config = ConfigurationManager.Load();
                         config.Settings = settingsRequest.Settings;
+                        _startupRegistrationService.Apply(config.Settings.LaunchAtStartup);
                         ConfigurationManager.Save(config);
                         _pingService.UpdateSettings(config.Settings);
 

@@ -15,7 +15,9 @@ Console.WriteLine($"已加载 {config.Servers.Count} 个服务器配置");
 var statsFileManager = new StatsFileManager();
 var pingService = new PingService(statsFileManager);
 var notificationService = new NotificationService();
-var ipcServer = new IpcServer(pingService, notificationService);
+var startupRegistrationService = new StartupRegistrationService();
+startupRegistrationService.Apply(config.Settings.LaunchAtStartup);
+var ipcServer = new IpcServer(pingService, notificationService, startupRegistrationService);
 var trayService = new TrayService(
     () => pingService.GetServers(),
     serverId => pingService.GetLastHourAvailability(serverId),
@@ -61,6 +63,15 @@ trayService.MonitoringToggleRequested += (sender, paused) =>
         pingService.Resume();
         Console.WriteLine("监控已恢复");
     }
+};
+
+trayService.LaunchAtStartupToggleRequested += (sender, enabled) =>
+{
+    var currentConfig = ConfigurationManager.Load();
+    currentConfig.Settings.LaunchAtStartup = enabled;
+    startupRegistrationService.Apply(enabled);
+    ConfigurationManager.Save(currentConfig);
+    pingService.UpdateSettings(currentConfig.Settings);
 };
 
 trayService.ExitRequested += (sender, e) =>

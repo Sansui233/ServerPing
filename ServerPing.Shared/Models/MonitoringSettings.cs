@@ -28,6 +28,8 @@ public class MonitoringSettings
 
     public bool SilentStartup { get; set; }
 
+    public bool LaunchAtStartup { get; set; }
+
     public string Language
     {
         get => _language;
@@ -45,6 +47,7 @@ public class MonitoringSettings
         PingIntervalSeconds = PingIntervalSeconds,
         FailureThreshold = FailureThreshold,
         SilentStartup = SilentStartup,
+        LaunchAtStartup = LaunchAtStartup,
         Language = Language,
         GuiHibernateDurationSeconds = GuiHibernateDurationSeconds
     };

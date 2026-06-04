@@ -9,6 +9,7 @@
     <sys:String x:Key="Settings.Language">Language</sys:String>
     <sys:String x:Key="Settings.HibernateDuration">UI hibernation while in background (seconds)</sys:String>
     <sys:String x:Key="Settings.SilentStartup">Start silently</sys:String>
+    <sys:String x:Key="Settings.LaunchAtStartup">Launch at startup</sys:String>
     <sys:String x:Key="Settings.DataDirectory">Data directory</sys:String>
     <sys:String x:Key="Settings.Open">Open</sys:String>
     <sys:String x:Key="Settings.TestNotification">Test notification</sys:String>

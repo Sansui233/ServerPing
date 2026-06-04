@@ -13,6 +13,7 @@ public class TrayService : IDisposable
     private readonly Form _menuOwner;
     private readonly ToolStripSeparator _statusSeparator;
     private readonly ToolStripMenuItem _openGuiItem;
+    private readonly ToolStripMenuItem _launchAtStartupItem;
     private readonly ToolStripMenuItem _toggleMonitoringItem;
     private readonly ToolStripMenuItem _exitItem;
     private readonly Func<List<Server>> _getServers;
@@ -24,6 +25,7 @@ public class TrayService : IDisposable
     public event EventHandler? OpenGuiRequested;
     public event EventHandler<(int X, int Y)>? ToggleGuiRequested;
     public event EventHandler<bool>? MonitoringToggleRequested;
+    public event EventHandler<bool>? LaunchAtStartupToggleRequested;
     public event EventHandler? ExitRequested;
 
     public TrayService(
@@ -51,6 +53,14 @@ public class TrayService : IDisposable
         _openGuiItem.Click += (s, e) => OpenGuiRequested?.Invoke(this, EventArgs.Empty);
 
         _statusSeparator = new ToolStripSeparator();
+
+        _launchAtStartupItem = new ToolStripMenuItem();
+        _launchAtStartupItem.Click += (s, e) =>
+        {
+            var enabled = !_getSettings().LaunchAtStartup;
+            LaunchAtStartupToggleRequested?.Invoke(this, enabled);
+            ApplyLanguage();
+        };
 
         _toggleMonitoringItem = new ToolStripMenuItem();
         _toggleMonitoringItem.Click += (s, e) =>
@@ -113,6 +123,7 @@ public class TrayService : IDisposable
         _contextMenu.Items.Add(_statusSeparator);
         _contextMenu.Items.AddRange(_statusItems.ToArray());
         _contextMenu.Items.Add(new ToolStripSeparator());
+        _contextMenu.Items.Add(_launchAtStartupItem);
         _contextMenu.Items.Add(_toggleMonitoringItem);
         _contextMenu.Items.Add(_exitItem);
     }
@@ -209,6 +220,8 @@ public class TrayService : IDisposable
     private void ApplyLanguage()
     {
         _openGuiItem.Text = T("Tray.OpenGui");
+        _launchAtStartupItem.Text = T("Tray.LaunchAtStartup");
+        _launchAtStartupItem.Checked = _getSettings().LaunchAtStartup;
         _toggleMonitoringItem.Text = _isMonitoringPaused
             ? T("Tray.ResumeMonitoring")
             : T("Tray.PauseMonitoring");
