@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ServerPing.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d680ed0432fedd731e5eaa60a0adc29aa50d496a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ServerPing.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ServerPing.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

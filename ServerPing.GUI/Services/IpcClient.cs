@@ -1,0 +1,103 @@
+using System.IO.Pipes;
+using System.Text;
+using System.Text.Json;
+using ServerPing.Shared.IPC;
+using ServerPing.Shared.Models;
+
+namespace ServerPing.GUI.Services;
+
+public class IpcClient
+{
+    private const string PipeName = "ServerPing";
+
+    public async Task<List<Server>> GetServersAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.GetServers
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<List<Server>>(json) ?? [];
+        }
+
+        return [];
+    }
+
+    public async Task<Server?> AddServerAsync(string name, string host)
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.AddServer,
+            Data = new AddServerRequest { Name = name, Host = host }
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<Server>(json);
+        }
+
+        return null;
+    }
+
+    public async Task<bool> RemoveServerAsync(string serverId)
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.RemoveServer,
+            Data = new RemoveServerRequest { ServerId = serverId }
+        });
+
+        return response.Success;
+    }
+
+    public async Task<bool> UpdateServersAsync(List<Server> servers)
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.UpdateServers,
+            Data = servers
+        });
+
+        return response.Success;
+    }
+
+    private async Task<IpcResponse> SendMessageAsync(IpcMessage message)
+    {
+        try
+        {
+            using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await pipe.ConnectAsync(3000);
+
+            var messageJson = JsonSerializer.Serialize(message);
+            var messageBytes = Encoding.UTF8.GetBytes(messageJson);
+            await pipe.WriteAsync(messageBytes);
+            await pipe.FlushAsync();
+
+            var buffer = new byte[65536];
+            var responseBuilder = new StringBuilder();
+
+            int bytesRead;
+            while ((bytesRead = await pipe.ReadAsync(buffer)) > 0)
+            {
+                responseBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                if (bytesRead < buffer.Length)
+                    break;
+            }
+
+            return JsonSerializer.Deserialize<IpcResponse>(responseBuilder.ToString())
+                   ?? new IpcResponse { Success = false, ErrorMessage = "反序列化失败" };
+        }
+        catch (TimeoutException)
+        {
+            return new IpcResponse { Success = false, ErrorMessage = "连接服务超时，请确认 ServerPing Service 正在运行" };
+        }
+        catch (Exception ex)
+        {
+            return new IpcResponse { Success = false, ErrorMessage = $"通信失败: {ex.Message}" };
+        }
+    }
+}

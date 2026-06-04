@@ -22,3 +22,7 @@ C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0
 C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\ServerPing.GUI.pdb
 C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\ServerPing.GUI.genruntimeconfig.cache
 C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\ref\ServerPing.GUI.dll
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\GeneratedInternalTypeHelper.g.cs
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\App.baml
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\ImportDialog.baml
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.GUI\obj\Debug\net9.0-windows\ImportDialog.g.cs
