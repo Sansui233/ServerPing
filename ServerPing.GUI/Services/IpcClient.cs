@@ -148,15 +148,15 @@ public class IpcClient
             }
 
             return JsonSerializer.Deserialize<IpcResponse>(responseBuilder.ToString())
-                   ?? new IpcResponse { Success = false, ErrorMessage = "反序列化失败" };
+                   ?? new IpcResponse { Success = false, ErrorMessage = LocalizationService.Get("Message.DeserializeFailed") };
         }
         catch (TimeoutException)
         {
-            return new IpcResponse { Success = false, ErrorMessage = "连接服务超时，请确认 ServerPing Service 正在运行" };
+            return new IpcResponse { Success = false, ErrorMessage = LocalizationService.Get("Message.ServiceConnectionTimeout") };
         }
         catch (Exception ex)
         {
-            return new IpcResponse { Success = false, ErrorMessage = $"通信失败: {ex.Message}" };
+            return new IpcResponse { Success = false, ErrorMessage = LocalizationService.Format("Message.CommunicationFailed", ex.Message) };
         }
     }
 }

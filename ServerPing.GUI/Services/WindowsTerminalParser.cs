@@ -17,7 +17,7 @@ public partial class WindowsTerminalParser
     {
         var settingsPath = FindSettingsFile();
         if (settingsPath == null)
-            throw new FileNotFoundException("未找到 Windows Terminal 配置文件");
+            throw new FileNotFoundException(LocalizationService.Get("Message.WindowsTerminalConfigNotFound"));
 
         var json = File.ReadAllText(settingsPath);
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });

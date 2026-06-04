@@ -13,15 +13,21 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        ApplyTheme(IsSystemDarkMode());
+        LocalizationService.Apply(LocalizationService.DefaultLanguage);
+
         _mutex = new Mutex(true, "ServerPing.GUI.SingleInstance", out var isNew);
         if (!isNew)
         {
-            MessageBox.Show("ServerPing 管理面板已在运行。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                LocalizationService.Get("Message.GuiAlreadyRunning"),
+                LocalizationService.Get("Dialog.Info"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
             Shutdown();
             return;
         }
 
-        ApplyTheme(IsSystemDarkMode());
         base.OnStartup(e);
 
         var mainWindow = new MainWindow();

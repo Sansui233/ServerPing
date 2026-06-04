@@ -14,6 +14,7 @@ public class PingService : IDisposable
     private bool _isPaused;
 
     public event EventHandler<ServerStatusChangedEventArgs>? StatusChanged;
+    public event EventHandler? SettingsChanged;
 
     public PingService(StatsFileManager statsFileManager)
     {
@@ -230,6 +231,8 @@ public class PingService : IDisposable
                 }
             }
         }
+
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void Pause()

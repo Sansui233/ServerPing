@@ -60,7 +60,7 @@
                               StrokeThickness="1.5" StrokeLineJoin="Round"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Width="14" Height="14" Stretch="Uniform" />
-                        <TextBlock Text="撤回" Margin="5,0,0,0" FontSize="12"
+                        <TextBlock Text="{DynamicResource Main.Undo}" Margin="5,0,0,0" FontSize="12"
                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                     </StackPanel>
                 </Button>
@@ -75,14 +75,14 @@
                               StrokeThickness="1.5" StrokeLineJoin="Round"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Width="14" Height="14" Stretch="Uniform" />
-                        <TextBlock Text="添加" Margin="5,0,0,0" FontSize="12"
+                        <TextBlock Text="{DynamicResource Main.Add}" Margin="5,0,0,0" FontSize="12"
                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                     </StackPanel>
                 </Button>
 
                 <!-- Import -->
                 <Button Grid.Column="3" Style="{StaticResource TitleBarIconButton}"
-                        Height="38" Padding="10,0" ToolTip="从 Windows Terminal 导入 SSH Profile"
+                        Height="38" Padding="10,0" ToolTip="{DynamicResource Main.ImportTooltip}"
                         Command="{Binding ImportFromTerminalCommand}">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Path Data="{StaticResource Icon.Import}"
@@ -90,7 +90,7 @@
                               StrokeThickness="1.5" StrokeLineJoin="Round"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Width="14" Height="14" Stretch="Uniform" />
-                        <TextBlock Text="导入" Margin="5,0,0,0" FontSize="12"
+                        <TextBlock Text="{DynamicResource Main.Import}" Margin="5,0,0,0" FontSize="12"
                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                     </StackPanel>
                 </Button>
@@ -105,14 +105,14 @@
                               StrokeThickness="1.5" StrokeLineJoin="Round"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Width="14" Height="14" Stretch="Uniform" />
-                        <TextBlock Text="设置" Margin="5,0,0,0" FontSize="12"
+                        <TextBlock Text="{DynamicResource Main.Settings}" Margin="5,0,0,0" FontSize="12"
                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                     </StackPanel>
                 </Button>
 
                 <!-- Minimize -->
                 <Button Grid.Column="5" Style="{StaticResource TitleBarIconButton}"
-                        Width="38" Height="38" ToolTip="最小化" Click="Minimize_Click">
+                        Width="38" Height="38" ToolTip="{DynamicResource Main.Minimize}" Click="Minimize_Click">
                     <Path Data="{StaticResource Icon.Minus}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                           StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
@@ -121,7 +121,7 @@
 
                 <!-- Close -->
                 <Button Grid.Column="6" Style="{StaticResource TitleBarCloseButton}" Margin="0,0,2,0"
-                        Width="38" Height="38" ToolTip="关闭" Click="Close_Click">
+                        Width="38" Height="38" ToolTip="{DynamicResource Main.Close}" Click="Close_Click">
                     <Path Data="{StaticResource Icon.X}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                           StrokeThickness="1.6" StrokeLineJoin="Round"
@@ -167,7 +167,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Name -->
-                    <DataGridTemplateColumn Header="名称" Width="Auto" MaxWidth="160">
+                    <DataGridTemplateColumn Header="{DynamicResource Main.Name}" Width="Auto" MaxWidth="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
@@ -182,7 +182,7 @@
 
 
                     <!-- Availability -->
-                    <DataGridTemplateColumn Header="可用率" Width="Auto" MinWidth="52">
+                    <DataGridTemplateColumn Header="{DynamicResource Main.Availability}" Width="Auto" MinWidth="52">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding LastHourAvailabilityText}"
@@ -216,7 +216,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Last check -->
-                    <DataGridTextColumn Header="最后检查" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
+                    <DataGridTextColumn Header="{DynamicResource Main.LastCheck}" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="VerticalAlignment" Value="Center" />
@@ -323,7 +323,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Actions -->
-                    <DataGridTemplateColumn Header="操作" Width="Auto" MinWidth="80">
+                    <DataGridTemplateColumn Header="{DynamicResource Main.Actions}" Width="Auto" MinWidth="80">
                         <DataGridTemplateColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -336,7 +336,7 @@
                                     <Button Command="{Binding DataContext.ToggleServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}"
                                             Width="28" Height="28" Padding="0"
-                                            Background="Transparent" BorderThickness="0" ToolTip="启用/禁用">
+                                            Background="Transparent" BorderThickness="0" ToolTip="{DynamicResource Main.ToggleEnabled}">
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                                 <Setter Property="Background" Value="Transparent" />
@@ -369,7 +369,7 @@
                                     <Button Command="{Binding DataContext.RemoveServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}"
                                             Width="28" Height="28" Padding="0" Margin="2,0,0,0"
-                                            ToolTip="删除">
+                                            ToolTip="{DynamicResource Main.Delete}">
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                                 <Setter Property="Background" Value="Transparent" />

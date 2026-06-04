@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using ServerPing.GUI.Services;
 using ServerPing.Shared;
 using ServerPing.GUI.ViewModels;
 using ServerPing.Shared.Models;
@@ -20,6 +21,8 @@ public partial class SettingsDialog : Window
         FailureThresholdTextBox.Text = settings.FailureThreshold.ToString();
         SilentStartupCheckBox.IsChecked = settings.SilentStartup;
         HibernateDurationTextBox.Text = settings.GuiHibernateDurationSeconds.ToString();
+        LanguageComboBox.ItemsSource = LocalizationService.Languages;
+        LanguageComboBox.SelectedValue = LocalizationService.Normalize(settings.Language);
         DataDirectoryTextBlock.Text = ConfigurationManager.ConfigDirectory;
     }
 
@@ -50,19 +53,22 @@ public partial class SettingsDialog : Window
 
         if (!saved)
         {
-            MessageTextBlock.Text = "保存失败，请确认服务正在运行。";
+            MessageTextBlock.Text = LocalizationService.Get("Message.SaveSettingsFailed");
             return;
         }
 
+        LocalizationService.Apply(settings.Language);
         DialogResult = true;
         Close();
     }
 
     private async void TestNotification_Click(object sender, RoutedEventArgs e)
     {
-        MessageTextBlock.Text = "正在发送测试通知...";
+        MessageTextBlock.Text = LocalizationService.Get("Message.SendingTestNotification");
         var sent = await _viewModel.TestNotificationAsync();
-        MessageTextBlock.Text = sent ? "测试通知已发送。" : "测试通知发送失败。";
+        MessageTextBlock.Text = sent
+            ? LocalizationService.Get("Message.TestNotificationSent")
+            : LocalizationService.Get("Message.TestNotificationFailed");
     }
 
     private void OpenDataDirectory_Click(object sender, RoutedEventArgs e)
@@ -82,21 +88,30 @@ public partial class SettingsDialog : Window
         if (!int.TryParse(PingIntervalTextBox.Text.Trim(), out var interval) ||
             interval is < MonitoringSettings.MinPingIntervalSeconds or > MonitoringSettings.MaxPingIntervalSeconds)
         {
-            MessageTextBlock.Text = "Ping 间隔必须在 1-300 秒之间。";
+            MessageTextBlock.Text = LocalizationService.Format(
+                "Validation.PingInterval",
+                MonitoringSettings.MinPingIntervalSeconds,
+                MonitoringSettings.MaxPingIntervalSeconds);
             return false;
         }
 
         if (!int.TryParse(FailureThresholdTextBox.Text.Trim(), out var threshold) ||
             threshold is < MonitoringSettings.MinFailureThreshold or > MonitoringSettings.MaxFailureThreshold)
         {
-            MessageTextBlock.Text = "失败通知次数必须在 1-20 次之间。";
+            MessageTextBlock.Text = LocalizationService.Format(
+                "Validation.FailureThreshold",
+                MonitoringSettings.MinFailureThreshold,
+                MonitoringSettings.MaxFailureThreshold);
             return false;
         }
 
         if (!int.TryParse(HibernateDurationTextBox.Text.Trim(), out var hibernate) ||
             hibernate is < MonitoringSettings.MinGuiHibernateDuration or > MonitoringSettings.MaxGuiHibernateDuration)
         {
-            MessageTextBlock.Text = $"窗口休眠时长必须在 {MonitoringSettings.MinGuiHibernateDuration}-{MonitoringSettings.MaxGuiHibernateDuration} 秒之间。";
+            MessageTextBlock.Text = LocalizationService.Format(
+                "Validation.HibernateDuration",
+                MonitoringSettings.MinGuiHibernateDuration,
+                MonitoringSettings.MaxGuiHibernateDuration);
             return false;
         }
 
@@ -104,6 +119,7 @@ public partial class SettingsDialog : Window
         settings.FailureThreshold = threshold;
         settings.SilentStartup = SilentStartupCheckBox.IsChecked == true;
         settings.GuiHibernateDurationSeconds = hibernate;
+        settings.Language = LanguageComboBox.SelectedValue as string ?? LocalizationService.DefaultLanguage;
         return true;
     }
 }

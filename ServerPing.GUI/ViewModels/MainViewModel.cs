@@ -13,7 +13,7 @@ public class MainViewModel : ViewModelBase
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _undoTimer;
     private ServerViewModel? _selectedServer;
-    private string _statusMessage = "正在连接服务...";
+    private string _statusMessage = LocalizationService.Get("Status.Connecting");
     private bool _isConnected;
     private bool _canUndo;
     private bool _isHostVisible = true;
@@ -58,7 +58,9 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    public string HostVisibilityToolTip => IsHostVisible ? "隐藏 Host / IP" : "显示 Host / IP";
+    public string HostVisibilityToolTip => IsHostVisible
+        ? LocalizationService.Get("Main.HideHost")
+        : LocalizationService.Get("Main.ShowHost");
 
     public RelayCommand AddServerCommand { get; }
     public RelayCommand RemoveServerCommand { get; }
@@ -118,14 +120,14 @@ public class MainViewModel : ViewModelBase
                 Servers.Remove(s);
 
             var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
-            StatusMessage = $"已连接 — {onlineCount}/{servers.Count} 在线";
+            StatusMessage = LocalizationService.Format("Status.Connected", onlineCount, servers.Count);
             IsConnected = true;
 
             await RefreshStatsAsync();
         }
         catch
         {
-            StatusMessage = "无法连接到服务，请确认 ServerPing Service 正在运行";
+            StatusMessage = LocalizationService.Get("Status.ServiceUnavailable");
             IsConnected = false;
         }
     }
@@ -139,11 +141,11 @@ public class MainViewModel : ViewModelBase
 
     private async Task AddNewRowAsync()
     {
-        var server = await _ipcClient.AddServerAsync("新服务器", "0.0.0.0");
+        var server = await _ipcClient.AddServerAsync(LocalizationService.Get("Server.NewServer"), "0.0.0.0");
         if (server != null)
             Servers.Add(ServerViewModel.FromModel(server));
         else
-            MessageBox.Show("添加服务器失败，请检查服务是否运行。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage("Message.AddServerFailed", "Dialog.Error", MessageBoxImage.Error);
     }
 
     private async Task RemoveServerAsync(object? parameter)
@@ -199,7 +201,7 @@ public class MainViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(server.Name) || string.IsNullOrWhiteSpace(server.Host))
         {
-            MessageBox.Show("名称和地址不能为空。", "输入无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowMessage("Message.NameHostRequired", "Dialog.InvalidInput", MessageBoxImage.Warning);
             await RefreshServersAsync();
             return false;
         }
@@ -207,11 +209,11 @@ public class MainViewModel : ViewModelBase
         var allServers = Servers.Select(s => s.ToModel()).ToList();
         if (!await _ipcClient.UpdateServersAsync(allServers))
         {
-            MessageBox.Show("保存服务器失败，请检查服务是否运行。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage("Message.SaveServerFailed", "Dialog.Error", MessageBoxImage.Error);
             return false;
         }
 
-        StatusMessage = $"已保存 {server.Name}";
+        StatusMessage = LocalizationService.Format("Status.Saved", server.Name);
         return true;
     }
 
@@ -233,7 +235,7 @@ public class MainViewModel : ViewModelBase
 
             if (profiles.Count == 0)
             {
-                MessageBox.Show("未找到 SSH 相关的 Profile。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowMessage("Message.NoSshProfiles", "Dialog.Info", MessageBoxImage.Information);
                 return;
             }
 
@@ -246,7 +248,7 @@ public class MainViewModel : ViewModelBase
 
             if (newProfiles.Count == 0)
             {
-                MessageBox.Show("所有 SSH Profile 的主机地址都已存在，无需导入。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowMessage("Message.AllProfilesExist", "Dialog.Info", MessageBoxImage.Information);
                 return;
             }
 
@@ -265,11 +267,21 @@ public class MainViewModel : ViewModelBase
         }
         catch (FileNotFoundException ex)
         {
-            MessageBox.Show(ex.Message, "未找到配置", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(ex.Message, LocalizationService.Get("Dialog.ConfigNotFound"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(LocalizationService.Format("Message.ImportFailed", ex.Message), LocalizationService.Get("Dialog.Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(HostVisibilityToolTip));
+        foreach (var server in Servers)
+            server.RefreshLocalizedText();
+    }
+
+    private static void ShowMessage(string messageKey, string captionKey, MessageBoxImage image) =>
+        MessageBox.Show(LocalizationService.Get(messageKey), LocalizationService.Get(captionKey), MessageBoxButton.OK, image);
 }

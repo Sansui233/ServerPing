@@ -18,7 +18,8 @@ var notificationService = new NotificationService();
 var ipcServer = new IpcServer(pingService, notificationService);
 var trayService = new TrayService(
     () => pingService.GetServers(),
-    serverId => pingService.GetLastHourAvailability(serverId));
+    serverId => pingService.GetLastHourAvailability(serverId),
+    () => pingService.GetSettings());
 var guiManager = new GuiProcessManager();
 
 pingService.StatusChanged += (sender, e) =>
@@ -34,6 +35,13 @@ pingService.StatusChanged += (sender, e) =>
         notificationService.ShowServerOnlineNotification(e.Server);
     }
 
+    var servers = pingService.GetServers();
+    var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
+    trayService.UpdateStatus(onlineCount, servers.Count);
+};
+
+pingService.SettingsChanged += (sender, e) =>
+{
     var servers = pingService.GetServers();
     var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
     trayService.UpdateStatus(onlineCount, servers.Count);

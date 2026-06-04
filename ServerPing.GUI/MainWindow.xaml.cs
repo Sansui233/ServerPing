@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ServerPing.GUI.Services;
 using ServerPing.GUI.ViewModels;
 
 namespace ServerPing.GUI;
@@ -49,6 +50,8 @@ public partial class MainWindow : Window
         await ViewModel.InitializeAsync();
 
         var settings = await ViewModel.LoadSettingsAsync();
+        LocalizationService.Apply(settings.Language);
+        ViewModel.RefreshLocalizedText();
         _hibernateDurationSeconds = settings.GuiHibernateDurationSeconds;
     }
 
@@ -142,6 +145,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true)
         {
             var newSettings = await ViewModel.LoadSettingsAsync();
+            LocalizationService.Apply(newSettings.Language);
+            ViewModel.RefreshLocalizedText();
             _hibernateDurationSeconds = newSettings.GuiHibernateDurationSeconds;
         }
     }

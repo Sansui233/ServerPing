@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using ServerPing.Shared.Localization;
 using ServerPing.Shared.Models;
 
 namespace ServerPing.Service;
@@ -16,6 +17,7 @@ public class TrayService : IDisposable
     private readonly ToolStripMenuItem _exitItem;
     private readonly Func<List<Server>> _getServers;
     private readonly Func<string, double?> _getLastHourAvailability;
+    private readonly Func<MonitoringSettings> _getSettings;
     private readonly List<ToolStripItem> _statusItems = [];
     private bool _isMonitoringPaused;
 
@@ -24,10 +26,14 @@ public class TrayService : IDisposable
     public event EventHandler<bool>? MonitoringToggleRequested;
     public event EventHandler? ExitRequested;
 
-    public TrayService(Func<List<Server>> getServers, Func<string, double?> getLastHourAvailability)
+    public TrayService(
+        Func<List<Server>> getServers,
+        Func<string, double?> getLastHourAvailability,
+        Func<MonitoringSettings> getSettings)
     {
         _getServers = getServers;
         _getLastHourAvailability = getLastHourAvailability;
+        _getSettings = getSettings;
         _contextMenu = new ContextMenuStrip();
         _menuOwner = new Form
         {
@@ -41,20 +47,20 @@ public class TrayService : IDisposable
         _menuOwner.Hide();
         _contextMenu.Closed += (s, e) => _menuOwner.Hide();
 
-        _openGuiItem = new ToolStripMenuItem("打开管理面板");
+        _openGuiItem = new ToolStripMenuItem();
         _openGuiItem.Click += (s, e) => OpenGuiRequested?.Invoke(this, EventArgs.Empty);
 
         _statusSeparator = new ToolStripSeparator();
 
-        _toggleMonitoringItem = new ToolStripMenuItem("暂停监控");
+        _toggleMonitoringItem = new ToolStripMenuItem();
         _toggleMonitoringItem.Click += (s, e) =>
         {
             _isMonitoringPaused = !_isMonitoringPaused;
-            _toggleMonitoringItem.Text = _isMonitoringPaused ? "恢复监控" : "暂停监控";
+            ApplyLanguage();
             MonitoringToggleRequested?.Invoke(this, _isMonitoringPaused);
         };
 
-        _exitItem = new ToolStripMenuItem("退出");
+        _exitItem = new ToolStripMenuItem();
         _exitItem.Click += (s, e) => ExitRequested?.Invoke(this, EventArgs.Empty);
 
         _contextMenu.Opening += (s, e) =>
@@ -62,6 +68,7 @@ public class TrayService : IDisposable
             RefreshStatusItems();
         };
 
+        ApplyLanguage();
         BuildMenuShell();
 
         _trayIcon = new NotifyIcon
@@ -112,6 +119,8 @@ public class TrayService : IDisposable
 
     private void RefreshStatusItems()
     {
+        ApplyLanguage();
+
         foreach (var item in _statusItems)
         {
             item.Dispose();
@@ -122,14 +131,14 @@ public class TrayService : IDisposable
 
         if (servers.Count == 0)
         {
-            _statusItems.Add(CreateStatusItem("暂无服务器"));
+            _statusItems.Add(CreateStatusItem(T("Tray.NoServers")));
         }
         else
         {
             foreach (var server in servers)
             {
                 var availability = _getLastHourAvailability(server.Id);
-                _statusItems.Add(CreateStatusItem(FormatServerStatus(server, availability)));
+                _statusItems.Add(CreateStatusItem(FormatServerStatus(server, availability, CurrentLanguage())));
             }
         }
 
@@ -174,7 +183,14 @@ public class TrayService : IDisposable
 
     public void UpdateStatus(int onlineCount, int totalCount)
     {
-        _trayIcon.Text = $"ServerPing - {onlineCount}/{totalCount} 在线";
+        var availability = AverageAvailability(_getServers()
+            .Select(server => _getLastHourAvailability(server.Id)));
+        var text = string.Format(
+            T("Tray.Tooltip"),
+            onlineCount,
+            totalCount,
+            FormatAvailability(availability));
+        _trayIcon.Text = text.Length <= 63 ? text : text[..63];
     }
 
     public void Dispose()
@@ -186,18 +202,30 @@ public class TrayService : IDisposable
         _menuOwner.Dispose();
     }
 
-    private static string FormatServerStatus(Server server, double? availability) =>
-        $"{StatusText(server.Status)}  {server.Name} ({server.Host})  {FormatAvailability(availability)}";
+    private string CurrentLanguage() => _getSettings().Language;
 
-    private static string StatusText(ServerStatus status) => status switch
+    private string T(string key) => SharedLocalization.Get(CurrentLanguage(), key);
+
+    private void ApplyLanguage()
     {
-        ServerStatus.Online => "在线",
-        ServerStatus.Offline => "离线",
-        _ => "未知"
-    };
+        _openGuiItem.Text = T("Tray.OpenGui");
+        _toggleMonitoringItem.Text = _isMonitoringPaused
+            ? T("Tray.ResumeMonitoring")
+            : T("Tray.PauseMonitoring");
+        _exitItem.Text = T("Tray.Exit");
+    }
+
+    private static string FormatServerStatus(Server server, double? availability, string language) =>
+        $"{SharedLocalization.StatusText(language, server.Status)}  {server.Name} ({server.Host})  {SharedLocalization.Get(language, "Tray.Availability")}: {FormatAvailability(availability)}";
 
     private static string FormatAvailability(double? availability) =>
         availability.HasValue ? $"{availability.Value:0.#}%" : "--";
+
+    private static double? AverageAvailability(IEnumerable<double?> values)
+    {
+        var availableValues = values.Where(v => v.HasValue).Select(v => v!.Value).ToList();
+        return availableValues.Count == 0 ? null : availableValues.Average();
+    }
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);

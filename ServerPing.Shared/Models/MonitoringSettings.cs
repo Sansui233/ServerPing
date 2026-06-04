@@ -12,6 +12,7 @@ public class MonitoringSettings
     private int _pingIntervalSeconds = 5;
     private int _failureThreshold = 3;
     private int _guiHibernateDurationSeconds = 10;
+    private string _language = "system";
 
     public int PingIntervalSeconds
     {
@@ -27,6 +28,12 @@ public class MonitoringSettings
 
     public bool SilentStartup { get; set; }
 
+    public string Language
+    {
+        get => _language;
+        set => _language = string.IsNullOrWhiteSpace(value) ? "system" : value;
+    }
+
     public int GuiHibernateDurationSeconds
     {
         get => _guiHibernateDurationSeconds;
@@ -38,6 +45,7 @@ public class MonitoringSettings
         PingIntervalSeconds = PingIntervalSeconds,
         FailureThreshold = FailureThreshold,
         SilentStartup = SilentStartup,
+        Language = Language,
         GuiHibernateDurationSeconds = GuiHibernateDurationSeconds
     };
 }

@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using ServerPing.GUI.Services;
 using ServerPing.Shared.Models;
 
 namespace ServerPing.GUI.ViewModels;
@@ -95,9 +96,9 @@ public class ServerViewModel : ViewModelBase
 
     public string StatusText => IsPlaceholderHost ? "—" : Status switch
     {
-        ServerStatus.Online => "在线",
-        ServerStatus.Offline => "离线",
-        _ => "未知"
+        ServerStatus.Online => LocalizationService.Get("Status.Online"),
+        ServerStatus.Offline => LocalizationService.Get("Status.Offline"),
+        _ => LocalizationService.Get("Status.Unknown")
     };
 
     public string LastPingTimeText => IsPlaceholderHost ? "—" : LastPingTime?.ToString("HH:mm:ss") ?? "-";
@@ -191,8 +192,14 @@ public class ServerViewModel : ViewModelBase
                 Color = ComputeMinuteBrush(m),
                 Tooltip = m.SuccessCount + m.FailureCount == 0
                     ? ""
-                    : $"成功：{m.SuccessCount} 失败：{m.FailureCount}"
+                    : LocalizationService.Format("Stats.MinuteTooltip", m.SuccessCount, m.FailureCount)
             })
             .ToArray();
+    }
+
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(IsEnabled));
     }
 }
