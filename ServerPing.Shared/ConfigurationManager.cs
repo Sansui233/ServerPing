@@ -5,7 +5,7 @@ namespace ServerPing.Shared;
 
 public class ConfigurationManager
 {
-    private static readonly string ConfigDirectory = Path.Combine(
+    public static readonly string ConfigDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "ServerPing"
     );

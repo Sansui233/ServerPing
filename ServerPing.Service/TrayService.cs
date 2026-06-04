@@ -20,6 +20,7 @@ public class TrayService : IDisposable
     private bool _isMonitoringPaused;
 
     public event EventHandler? OpenGuiRequested;
+    public event EventHandler<(int X, int Y)>? ToggleGuiRequested;
     public event EventHandler<bool>? MonitoringToggleRequested;
     public event EventHandler? ExitRequested;
 
@@ -78,7 +79,8 @@ public class TrayService : IDisposable
     {
         if (e.Button == MouseButtons.Left)
         {
-            OpenGuiRequested?.Invoke(this, EventArgs.Empty);
+            var pos = Cursor.Position;
+            ToggleGuiRequested?.Invoke(this, (pos.X, pos.Y));
             return;
         }
 

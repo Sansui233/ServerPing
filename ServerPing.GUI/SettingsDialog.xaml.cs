@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using ServerPing.Shared;
 using ServerPing.GUI.ViewModels;
 using ServerPing.Shared.Models;
 
@@ -16,6 +19,8 @@ public partial class SettingsDialog : Window
         PingIntervalTextBox.Text = settings.PingIntervalSeconds.ToString();
         FailureThresholdTextBox.Text = settings.FailureThreshold.ToString();
         SilentStartupCheckBox.IsChecked = settings.SilentStartup;
+        HibernateDurationTextBox.Text = settings.GuiHibernateDurationSeconds.ToString();
+        DataDirectoryTextBlock.Text = ConfigurationManager.ConfigDirectory;
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -54,6 +59,16 @@ public partial class SettingsDialog : Window
         MessageTextBlock.Text = sent ? "测试通知已发送。" : "测试通知发送失败。";
     }
 
+    private void OpenDataDirectory_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(ConfigurationManager.ConfigDirectory);
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = ConfigurationManager.ConfigDirectory,
+            UseShellExecute = true
+        });
+    }
+
     private bool TryReadSettings(out MonitoringSettings settings)
     {
         settings = new MonitoringSettings();
@@ -72,9 +87,17 @@ public partial class SettingsDialog : Window
             return false;
         }
 
+        if (!int.TryParse(HibernateDurationTextBox.Text.Trim(), out var hibernate) ||
+            hibernate is < MonitoringSettings.MinGuiHibernateDuration or > MonitoringSettings.MaxGuiHibernateDuration)
+        {
+            MessageTextBlock.Text = $"窗口休眠时长必须在 {MonitoringSettings.MinGuiHibernateDuration}-{MonitoringSettings.MaxGuiHibernateDuration} 秒之间。";
+            return false;
+        }
+
         settings.PingIntervalSeconds = interval;
         settings.FailureThreshold = threshold;
         settings.SilentStartup = SilentStartupCheckBox.IsChecked == true;
+        settings.GuiHibernateDurationSeconds = hibernate;
         return true;
     }
 }

@@ -7,12 +7,18 @@ public class PingService : IDisposable
 {
     private readonly Dictionary<string, System.Threading.Timer> _timers = new();
     private readonly Dictionary<string, Server> _servers = new();
-    private readonly Dictionary<string, List<PingSample>> _history = new();
+    private readonly Dictionary<string, MinuteRingBuffer> _minuteBuffers = new();
+    private readonly StatsFileManager _statsFileManager;
     private readonly object _lock = new();
     private MonitoringSettings _settings = new();
     private bool _isPaused;
 
     public event EventHandler<ServerStatusChangedEventArgs>? StatusChanged;
+
+    public PingService(StatsFileManager statsFileManager)
+    {
+        _statsFileManager = statsFileManager;
+    }
 
     public void Start(List<Server> servers, MonitoringSettings? settings = null)
     {
@@ -23,16 +29,20 @@ public class PingService : IDisposable
                 _settings = settings.Clone();
             }
 
+            var serverIds = new List<string>();
             foreach (var server in servers)
             {
                 _servers[server.Id] = server;
-                _history.TryAdd(server.Id, []);
+                _minuteBuffers.TryAdd(server.Id, new MinuteRingBuffer());
+                serverIds.Add(server.Id);
 
                 if (server.IsEnabled)
                 {
                     StartPinging(server);
                 }
             }
+
+            _statsFileManager.LoadOnStartup(serverIds);
         }
     }
 
@@ -48,7 +58,8 @@ public class PingService : IDisposable
             {
                 StopPinging(id);
                 _servers.Remove(id);
-                _history.Remove(id);
+                _minuteBuffers.Remove(id);
+                _statsFileManager.RemoveServer(id);
             }
 
             foreach (var server in servers)
@@ -56,7 +67,6 @@ public class PingService : IDisposable
                 if (_servers.TryGetValue(server.Id, out var existing))
                 {
                     var wasEnabled = existing.IsEnabled;
-                    // preserve runtime state — only update user-editable fields
                     existing.Name = server.Name;
                     existing.Host = server.Host;
                     existing.IsEnabled = server.IsEnabled;
@@ -69,7 +79,7 @@ public class PingService : IDisposable
                 else
                 {
                     _servers[server.Id] = server;
-                    _history.TryAdd(server.Id, []);
+                    _minuteBuffers.TryAdd(server.Id, new MinuteRingBuffer());
 
                     if (server.IsEnabled)
                         StartPinging(server);
@@ -107,6 +117,9 @@ public class PingService : IDisposable
         lock (_lock)
         {
             if (!_servers.TryGetValue(serverId, out server))
+                return;
+
+            if (server.Host is "0.0.0.0" or "127.0.0.1" or "localhost")
                 return;
         }
 
@@ -182,21 +195,9 @@ public class PingService : IDisposable
 
     private void RecordPingResult(string serverId, bool wasSuccessful)
     {
-        var now = DateTime.Now;
-        if (!_history.TryGetValue(serverId, out var samples))
-        {
-            samples = [];
-            _history[serverId] = samples;
-        }
-
-        samples.Add(new PingSample(now, wasSuccessful));
-        PruneHistory(samples, now);
-    }
-
-    private static void PruneHistory(List<PingSample> samples, DateTime now)
-    {
-        var cutoff = now.AddHours(-24);
-        samples.RemoveAll(s => s.Timestamp < cutoff);
+        _statsFileManager.RecordResult(serverId, wasSuccessful);
+        if (_minuteBuffers.TryGetValue(serverId, out var buffer))
+            buffer.Record(wasSuccessful);
     }
 
     public List<Server> GetServers()
@@ -257,46 +258,26 @@ public class PingService : IDisposable
     {
         lock (_lock)
         {
-            var now = DateTime.Now;
-
-            foreach (var samples in _history.Values)
-            {
-                PruneHistory(samples, now);
-            }
-
             return _servers.Keys.Select(id => new ServerStats
             {
                 ServerId = id,
-                LastHour = BuildStatsWindow(_history.GetValueOrDefault(id), now.AddHours(-1)),
-                LastDay = BuildStatsWindow(_history.GetValueOrDefault(id), now.AddDays(-1))
+                LastHour = _statsFileManager.GetLastHourStats(id),
+                RecentMinutes = _minuteBuffers.TryGetValue(id, out var buf)
+                    ? buf.GetRecentMinutes()
+                    : []
             }).ToList();
         }
     }
 
-    private static PingStatsWindow BuildStatsWindow(List<PingSample>? samples, DateTime cutoff)
-    {
-        if (samples == null)
-            return new PingStatsWindow();
-
-        return new PingStatsWindow
-        {
-            SuccessCount = samples.Count(s => s.Timestamp >= cutoff && s.WasSuccessful),
-            FailureCount = samples.Count(s => s.Timestamp >= cutoff && !s.WasSuccessful)
-        };
-    }
-
     public double? GetLastHourAvailability(string serverId)
     {
-        lock (_lock)
-        {
-            var now = DateTime.Now;
-            var stats = BuildStatsWindow(_history.GetValueOrDefault(serverId), now.AddHours(-1));
-            return stats.AvailabilityPercent;
-        }
+        return _statsFileManager.GetLastHourStats(serverId).AvailabilityPercent;
     }
 
     public void Dispose()
     {
+        _statsFileManager.FlushAll();
+
         lock (_lock)
         {
             foreach (var timer in _timers.Values)
@@ -305,10 +286,10 @@ public class PingService : IDisposable
             }
             _timers.Clear();
         }
+
+        _statsFileManager.Dispose();
     }
 }
-
-public readonly record struct PingSample(DateTime Timestamp, bool WasSuccessful);
 
 public class ServerStatusChangedEventArgs : EventArgs
 {

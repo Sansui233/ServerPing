@@ -11,14 +11,11 @@ public partial class ImportDialog : Window
 
     public List<SshProfile> SelectedProfiles { get; private set; } = [];
 
-    public ImportDialog(List<SshProfile> profiles, HashSet<string> existingHosts)
+    public ImportDialog(List<SshProfile> profiles)
     {
         InitializeComponent();
 
-        _profiles = profiles.Select(p => new SshProfileViewModel(p)
-        {
-            IsSelected = !existingHosts.Contains(p.Host)
-        }).ToList();
+        _profiles = [.. profiles.Select(p => new SshProfileViewModel(p) { IsSelected = true })];
 
         ProfileGrid.ItemsSource = _profiles;
     }

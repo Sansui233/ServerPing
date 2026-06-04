@@ -119,19 +119,25 @@ dotnet run --project ServerPing.GUI
 # Run tests
 dotnet test
 
-# Publish self-contained executables to a single directory (win-x64)
-dotnet publish ServerPing.Service -c Release -r win-x64 --self-contained -o publish
-dotnet publish ServerPing.GUI    -c Release -r win-x64 --self-contained -o publish
+# Publish — self-contained (standalone, no .NET required)
+dotnet publish ServerPing.Service -c Release -r win-x64 --self-contained -o publish/standalone
+dotnet publish ServerPing.GUI    -c Release -r win-x64 --self-contained -o publish/standalone
+
+# Publish — portable (framework-dependent, requires .NET 9 runtime)
+dotnet publish ServerPing.Service -c Release -r win-x64 --no-self-contained -o publish/portable
+dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o publish/portable
 ```
 
 ### Publish
 
-两个项目必须 publish 到同一目录（`-o publish`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
+两个项目必须 publish 到同一目录（`-o`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
 
-| 文件 | 说明 |
-|------|------|
-| `publish/ServerPing.exe`     | **统一入口** — 启动后常驻托盘，管理监控与 GUI 生命周期 |
-| `publish/ServerPing.GUI.exe` | 管理面板 — 由 Service 按需启动，用户不需要手动运行 |
+| 方案 | 输出目录 | 体积 | 运行要求 |
+|------|----------|------|----------|
+| Self-contained (standalone) | `publish/` | ~150 MB | 无，包含 .NET 运行时 |
+| Portable (framework-dependent) | `publish/` | ~2 MB | 目标机器已安装 .NET 9 |
+
+两个方案的入口均为 `ServerPing.exe`，GUI 由 Service 按需启动。
 
 ## Current Status
 
@@ -149,16 +155,12 @@ All core features complete:
 - ✅ GUI single-instance protection (Mutex)
 - ✅ Single entry point (Service launches GUI, SilentStartup option)
 
-## Pending Work
-
-- 开机自启动选项 (autostart on Windows login)
-- 托盘图标动态更新（显示在线比例）
-
 ## Project Constraints
 
 - **Target Framework:** .NET 9
 - **Platform:** Windows-only (Windows notifications, system tray, WPF)
 - **Resource Usage:** Service must stay under 20MB memory when GUI is closed
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
+- **Do Not Build** for validation modifications.
 
-You Must update this file to track this repo whenever the architecture or status changes.
+You Must update CLAUDE.mdfile to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.

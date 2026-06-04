@@ -3,32 +3,30 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ServerPing.GUI.ViewModels"
         Title="ServerPing"
-        Height="560" Width="980"
-        MinHeight="440" MinWidth="700"
+        MinHeight="310" MaxHeight="560" Width="550"
+        SizeToContent="Height"
         WindowStyle="None"
-        ResizeMode="CanResize"
+        ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded" Closing="Window_Closing">
 
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4" GlassFrameThickness="0" NonClientFrameEdges="None" />
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="-1" NonClientFrameEdges="None" />
     </WindowChrome.WindowChrome>
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
 
-    <Border Background="{StaticResource AppBackgroundBrush}" BorderBrush="{StaticResource BorderBrushDark}" BorderThickness="1">
+    <Border Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushDark}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="42" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Title bar -->
-            <Grid Grid.Row="0" Background="{StaticResource TitleBarBrush}"
+            <Grid Grid.Row="0" Background="{DynamicResource TitleBarBrush}"
                   MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -36,50 +34,91 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
-                    <Border Width="8" Height="8" Background="{StaticResource AccentBrush}" CornerRadius="4" Margin="0,0,9,0" />
+                    <Border Width="8" Height="8" Background="{DynamicResource AccentBrush}" CornerRadius="4" Margin="0,0,9,0" />
                     <TextBlock Text="ServerPing" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
 
-                <!-- Import from Terminal -->
+                <!-- Undo -->
                 <Button Grid.Column="1" Style="{StaticResource TitleBarIconButton}"
-                        Width="38" Height="38" ToolTip="从 Terminal 导入"
+                        Height="38" Padding="10,0"
+                        Command="{Binding UndoDeleteCommand}"
+                        Visibility="{Binding CanUndo, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Undo}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="14" Height="14" Stretch="Uniform" />
+                        <TextBlock Text="撤回" Margin="5,0,0,0" FontSize="12"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Add -->
+                <Button Grid.Column="2" Style="{StaticResource TitleBarIconButton}"
+                        Height="38" Padding="10,0"
+                        Command="{Binding AddServerCommand}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Plus}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="14" Height="14" Stretch="Uniform" />
+                        <TextBlock Text="添加" Margin="5,0,0,0" FontSize="12"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Import -->
+                <Button Grid.Column="3" Style="{StaticResource TitleBarIconButton}"
+                        Height="38" Padding="10,0" ToolTip="从 Windows Terminal 导入 SSH Profile"
                         Command="{Binding ImportFromTerminalCommand}">
-                    <Path Data="{StaticResource Icon.Terminal}"
-                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          StrokeThickness="1.6" StrokeLineJoin="Round"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                          Width="15" Height="15" Stretch="Uniform" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Import}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="14" Height="14" Stretch="Uniform" />
+                        <TextBlock Text="导入" Margin="5,0,0,0" FontSize="12"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </StackPanel>
                 </Button>
 
                 <!-- Settings -->
-                <Button Grid.Column="2" Style="{StaticResource TitleBarIconButton}"
-                        Width="38" Height="38" ToolTip="设置"
+                <Button Grid.Column="4" Style="{StaticResource TitleBarIconButton}"
+                        Height="38" Padding="10,0"
                         Click="Settings_Click">
-                    <Path Data="{StaticResource Icon.Settings}"
-                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          StrokeThickness="1.6" StrokeLineJoin="Round"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                          Width="15" Height="15" Stretch="Uniform" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Settings}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="14" Height="14" Stretch="Uniform" />
+                        <TextBlock Text="设置" Margin="5,0,0,0" FontSize="12"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </StackPanel>
                 </Button>
 
                 <!-- Minimize -->
-                <Button Grid.Column="3" Style="{StaticResource TitleBarIconButton}"
-                        Width="38" Height="38" ToolTip="最小化"
-                        Click="Minimize_Click">
+                <Button Grid.Column="5" Style="{StaticResource TitleBarIconButton}"
+                        Width="38" Height="38" ToolTip="最小化" Click="Minimize_Click">
                     <Path Data="{StaticResource Icon.Minus}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          StrokeThickness="1.6"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                           Width="14" Height="14" Stretch="Uniform" />
                 </Button>
 
                 <!-- Close -->
-                <Button Grid.Column="4" Style="{StaticResource TitleBarCloseButton}"
-                        Width="38" Height="38" ToolTip="关闭"
-                        Click="Close_Click">
+                <Button Grid.Column="6" Style="{StaticResource TitleBarCloseButton}"
+                        Width="38" Height="38" ToolTip="关闭" Click="Close_Click">
                     <Path Data="{StaticResource Icon.X}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                           StrokeThickness="1.6" StrokeLineJoin="Round"
@@ -100,129 +139,167 @@
                       CanUserDeleteRows="False"
                       HeadersVisibility="Column"
                       RowHeight="38"
+                      MinHeight="268"
+                      MaxHeight="488"
                       AlternationCount="2"
                       Margin="0">
 
                 <DataGrid.Columns>
-                    <!-- Name: editable TextBox -->
-                    <DataGridTemplateColumn Header="名称" Width="Auto" MinWidth="100">
+                    <!-- Status dot -->
+                    <DataGridTemplateColumn Width="28" CanUserResize="False">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Ellipse Width="8" Height="8" Fill="{Binding StatusDotColor}"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Name -->
+                    <DataGridTemplateColumn Header="名称" Width="Auto" MaxWidth="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                         LostFocus="NameTextBox_LostFocus"
-                                         KeyDown="NameTextBox_KeyDown"
-                                         BorderThickness="0"
-                                         Background="Transparent"
-                                         Padding="4,0"
+                                         Style="{StaticResource InlineEditTextBox}"
+                                         GotFocus="IdentityTextBox_GotFocus"
+                                         LostFocus="IdentityTextBox_LostFocus" KeyDown="IdentityTextBox_KeyDown"
                                          VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Host: editable TextBox -->
-                    <DataGridTemplateColumn Header="Host / IP" Width="Auto" MinWidth="110">
+                    <!-- Host/IP -->
+                    <DataGridTemplateColumn Header="Host / IP" Width="*" MinWidth="126" MaxWidth="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
-                                         LostFocus="HostTextBox_LostFocus"
-                                         KeyDown="HostTextBox_KeyDown"
-                                         BorderThickness="0"
-                                         Background="Transparent"
-                                         Padding="4,0"
+                                         Style="{StaticResource InlineEditTextBox}"
+                                         GotFocus="IdentityTextBox_GotFocus"
+                                         LostFocus="IdentityTextBox_LostFocus" KeyDown="IdentityTextBox_KeyDown"
                                          VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Status -->
-                    <DataGridTextColumn Header="状态" Binding="{Binding StatusText}" Width="Auto" MinWidth="60">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding StatusText}" Value="在线">
-                                        <Setter Property="Foreground" Value="#34D399" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding StatusText}" Value="离线">
-                                        <Setter Property="Foreground" Value="#F87171" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding StatusText}" Value="未知">
-                                        <Setter Property="Foreground" Value="#94A3B8" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-
                     <!-- Last check -->
-                    <DataGridTextColumn Header="最后检查" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="80">
+                    <DataGridTextColumn Header="最后检查" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <!-- Enabled -->
-                    <DataGridTemplateColumn Header="启用" Width="Auto" MinWidth="52">
+                    <!-- MinuteState bars -->
+                    <DataGridTemplateColumn Width="Auto" MinWidth="84" CanUserResize="False">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          IsHitTestVisible="False" />
+                                <ItemsControl ItemsSource="{Binding MinuteBars}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="6" Height="24" CornerRadius="2"
+                                                    Background="{Binding Color}" Margin="1,0"
+                                                    ToolTip="{Binding Tooltip}"
+                                                    ToolTipService.InitialShowDelay="0" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- 1h stats -->
-                    <DataGridTextColumn Header="1h 成/败/总" Binding="{Binding LastHourStatsText}" Width="Auto" MinWidth="90">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-
-                    <!-- 1d stats -->
-                    <DataGridTextColumn Header="1d 成/败/总" Binding="{Binding LastDayStatsText}" Width="Auto" MinWidth="90">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-
-                    <!-- 1h availability -->
-                    <DataGridTextColumn Header="1h 可用率" Binding="{Binding LastHourAvailabilityText}" Width="Auto" MinWidth="80">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-
-                    <!-- Actions -->
-                    <DataGridTemplateColumn Header="操作" Width="*" MinWidth="120">
+                    <!-- Availability -->
+                    <DataGridTemplateColumn Header="可用率" Width="Auto" MinWidth="52">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="{Binding IsEnabled, Converter={StaticResource EnableToggleConverter}}"
-                                            Command="{Binding DataContext.ToggleServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" Padding="8,3" Margin="0,0,6,0" />
-                                    <Button Command="{Binding DataContext.RemoveServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" Padding="6,3"
-                                            Background="Transparent" BorderBrush="Transparent" BorderThickness="0"
-                                            ToolTip="删除">
-                                        <Path Data="{StaticResource Icon.Trash}"
-                                              Stroke="{StaticResource DangerBrush}"
+                                <TextBlock Text="{Binding LastHourAvailabilityText}"
+                                           Foreground="{Binding AvailabilityColor}"
+                                           VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Actions -->
+                    <DataGridTemplateColumn Header="操作" Width="Auto" MinWidth="80">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <!-- Toggle enable/disable -->
+                                    <Button Command="{Binding DataContext.ToggleServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Width="28" Height="28" Padding="0"
+                                            Background="Transparent" BorderThickness="0" ToolTip="启用/禁用">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="Bd" Background="Transparent"
+                                                                    CornerRadius="4" Width="28" Height="28">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TitleBarHoverBrush}" />
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                        <Path Data="{StaticResource Icon.Power}"
+                                              Stroke="{Binding EnableIconColor}"
                                               StrokeThickness="1.4" StrokeLineJoin="Round"
                                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                               Width="14" Height="14" Stretch="Uniform" />
+                                    </Button>
+
+                                    <!-- Delete -->
+                                    <Button Command="{Binding DataContext.RemoveServerCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Width="28" Height="28" Padding="0" Margin="2,0,0,0"
+                                            ToolTip="删除">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="Bd" Background="Transparent"
+                                                                    CornerRadius="4" Width="28" Height="28">
+                                                                <Path x:Name="Ico" Data="{StaticResource Icon.Trash}"
+                                                                      Stroke="{DynamicResource MutedTextBrush}"
+                                                                      StrokeThickness="1.4" StrokeLineJoin="Round"
+                                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                                      Width="14" Height="14" Stretch="Uniform"
+                                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource DangerBrush}" />
+                                                                    <Setter TargetName="Bd"  Property="Background" Value="{DynamicResource TitleBarHoverBrush}" />
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
                                     </Button>
                                 </StackPanel>
                             </DataTemplate>
@@ -231,22 +308,6 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <!-- Add row button: full width, appears below the list -->
-            <Button Grid.Row="2" Style="{StaticResource AddRowButton}"
-                    Command="{Binding AddServerCommand}"
-                    ToolTip="添加服务器">
-                <Path Data="{StaticResource Icon.Plus}"
-                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                      StrokeThickness="1.6" StrokeLineJoin="Round"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                      Width="16" Height="16" Stretch="Uniform" />
-            </Button>
-
-            <!-- Status bar -->
-            <Border Grid.Row="3" Padding="14,6" Background="{StaticResource TitleBarBrush}"
-                    BorderBrush="{StaticResource BorderBrushDark}" BorderThickness="0,1,0,0">
-                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource MutedTextBrush}" FontSize="12" />
-            </Border>
         </Grid>
     </Border>
 </Window>

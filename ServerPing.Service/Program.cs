@@ -1,4 +1,5 @@
 ﻿using System.Windows.Forms;
+using Microsoft.Win32;
 using ServerPing.Service;
 using ServerPing.Shared;
 using ServerPing.Shared.Models;
@@ -11,7 +12,8 @@ Console.WriteLine("ServerPing Service 启动中...");
 var config = ConfigurationManager.Load();
 Console.WriteLine($"已加载 {config.Servers.Count} 个服务器配置");
 
-var pingService = new PingService();
+var statsFileManager = new StatsFileManager();
+var pingService = new PingService(statsFileManager);
 var notificationService = new NotificationService();
 var ipcServer = new IpcServer(pingService, notificationService);
 var trayService = new TrayService(
@@ -38,6 +40,7 @@ pingService.StatusChanged += (sender, e) =>
 };
 
 trayService.OpenGuiRequested += (sender, e) => guiManager.LaunchGui();
+trayService.ToggleGuiRequested += async (s, pos) => await guiManager.ToggleGui(pos.X, pos.Y);
 trayService.MonitoringToggleRequested += (sender, paused) =>
 {
     if (paused)
@@ -66,6 +69,8 @@ var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
 trayService.UpdateStatus(onlineCount, servers.Count);
 
 Console.WriteLine("监控服务已启动，系统托盘图标已显示");
+
+SystemEvents.SessionEnding += (s, e) => { statsFileManager.FlushAll(); };
 
 if (!config.Settings.SilentStartup)
 {
