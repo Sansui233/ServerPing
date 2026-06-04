@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ServerPing.GUI.ViewModels"
         Title="ServerPing"
-        MinHeight="310" MaxHeight="560" Width="550"
+        MinHeight="310" MaxHeight="560" MaxWidth="600"
         SizeToContent="Height"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -138,6 +138,8 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       HeadersVisibility="Column"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       RowHeight="38"
                       MinHeight="268"
                       MaxHeight="488"
@@ -168,28 +170,18 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Host/IP -->
-                    <DataGridTemplateColumn Header="Host / IP" Width="*" MinWidth="126" MaxWidth="160">
+
+
+                    <!-- Availability -->
+                    <DataGridTemplateColumn Header="可用率" Width="Auto" MinWidth="52">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource InlineEditTextBox}"
-                                         GotFocus="IdentityTextBox_GotFocus"
-                                         LostFocus="IdentityTextBox_LostFocus" KeyDown="IdentityTextBox_KeyDown"
-                                         VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LastHourAvailabilityText}"
+                                           Foreground="{Binding AvailabilityColor}"
+                                           VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-
-                    <!-- Last check -->
-                    <DataGridTextColumn Header="最后检查" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
 
                     <!-- MinuteState bars -->
                     <DataGridTemplateColumn Width="Auto" MinWidth="84" CanUserResize="False">
@@ -214,13 +206,109 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Availability -->
-                    <DataGridTemplateColumn Header="可用率" Width="Auto" MinWidth="52">
+                    <!-- Last check -->
+                    <DataGridTextColumn Header="最后检查" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                                        <!-- Host/IP -->
+                    <DataGridTemplateColumn Width="*" MinWidth="126">
+                        <DataGridTemplateColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Host / IP"
+                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridColumnHeader}}" />
+                                <Button Width="22" Height="22" Padding="0" Margin="4,0,0,0"
+                                        Background="Transparent" BorderThickness="0"
+                                        Command="{Binding DataContext.ToggleHostVisibilityCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        ToolTip="{Binding DataContext.HostVisibilityToolTip, RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Background="Transparent"
+                                                                CornerRadius="4" Width="22" Height="22">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TitleBarHoverBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                    <Path Stroke="{DynamicResource MutedTextBrush}"
+                                          StrokeThickness="1.6" StrokeLineJoin="Round"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          Width="14" Height="14" Stretch="Uniform">
+                                        <Path.Style>
+                                            <Style TargetType="Path">
+                                                <Setter Property="Data" Value="{StaticResource Icon.Eye}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding DataContext.IsHostVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False">
+                                                        <Setter Property="Data" Value="{StaticResource Icon.EyeClosed}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                </Button>
+                            </StackPanel>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding LastHourAvailabilityText}"
-                                           Foreground="{Binding AvailabilityColor}"
-                                           VerticalAlignment="Center" />
+                                <Grid>
+                                    <TextBox x:Name="HostTextBox"
+                                             Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
+                                             GotFocus="IdentityTextBox_GotFocus"
+                                             LostFocus="IdentityTextBox_LostFocus" KeyDown="IdentityTextBox_KeyDown"
+                                             VerticalAlignment="Center">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox" BasedOn="{StaticResource InlineEditTextBox}">
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DataContext.IsHostVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False" />
+                                                            <Condition Binding="{Binding IsFocused, RelativeSource={RelativeSource Self}}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Foreground" Value="Transparent" />
+                                                        <Setter Property="CaretBrush" Value="Transparent" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                    <TextBlock Text="*.*.*.*"
+                                               IsHitTestVisible="False"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource ObscuredTextBrush}" />
+                                                <Setter Property="VerticalAlignment" Value="Center" />
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DataContext.IsHostVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False" />
+                                                            <Condition Binding="{Binding IsFocused, ElementName=HostTextBox}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

@@ -16,6 +16,7 @@ public class MainViewModel : ViewModelBase
     private string _statusMessage = "正在连接服务...";
     private bool _isConnected;
     private bool _canUndo;
+    private bool _isHostVisible = true;
     private string? _lastDeletedName;
     private string? _lastDeletedHost;
 
@@ -45,11 +46,26 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _canUndo, value);
     }
 
+    public bool IsHostVisible
+    {
+        get => _isHostVisible;
+        set
+        {
+            if (!SetProperty(ref _isHostVisible, value))
+                return;
+
+            OnPropertyChanged(nameof(HostVisibilityToolTip));
+        }
+    }
+
+    public string HostVisibilityToolTip => IsHostVisible ? "隐藏 Host / IP" : "显示 Host / IP";
+
     public RelayCommand AddServerCommand { get; }
     public RelayCommand RemoveServerCommand { get; }
     public RelayCommand ToggleServerCommand { get; }
     public RelayCommand ImportFromTerminalCommand { get; }
     public RelayCommand UndoDeleteCommand { get; }
+    public RelayCommand ToggleHostVisibilityCommand { get; }
 
     public MainViewModel()
     {
@@ -60,6 +76,7 @@ public class MainViewModel : ViewModelBase
             (p) => p is ServerViewModel);
         ImportFromTerminalCommand = new RelayCommand(ImportFromTerminal);
         UndoDeleteCommand = new RelayCommand(async () => await UndoDeleteAsync(), () => CanUndo);
+        ToggleHostVisibilityCommand = new RelayCommand(() => IsHostVisible = !IsHostVisible);
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _refreshTimer.Tick += async (s, e) => await RefreshServersAsync();

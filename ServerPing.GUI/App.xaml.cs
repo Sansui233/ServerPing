@@ -88,6 +88,7 @@ public partial class App : Application
             Set("BorderBrushDark",           0x30, 0x37, 0x41);
             Set("TextBrush",                 0xE6, 0xEA, 0xF0);
             Set("MutedTextBrush",            0x98, 0xA2, 0xB3);
+            Set("ObscuredTextBrush",         0x66, 0x70, 0x85);
             Set("AccentBrush",               0x4F, 0x8C, 0xFF);
             Set("DangerBrush",               0xF8, 0x71, 0x71);
             Set("ButtonBackgroundBrush",     0x25, 0x2B, 0x34);
@@ -112,6 +113,7 @@ public partial class App : Application
             Set("BorderBrushDark",           0xD1, 0xD5, 0xDB);
             Set("TextBrush",                 0x1A, 0x1A, 0x1A);
             Set("MutedTextBrush",            0x6B, 0x72, 0x80);
+            Set("ObscuredTextBrush",         0x9C, 0xA3, 0xAF);
             Set("AccentBrush",               0x4F, 0x8C, 0xFF);
             Set("DangerBrush",               0xEF, 0x44, 0x44);
             Set("ButtonBackgroundBrush",     0xE5, 0xE7, 0xEB);

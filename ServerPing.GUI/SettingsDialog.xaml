@@ -39,8 +39,10 @@
             </Grid>
 
             <!-- Content -->
-            <Border Grid.Row="1" Background="{DynamicResource PanelBackgroundBrush}" Padding="18,16,18,0">
-                <StackPanel>
+            <Border Grid.Row="1" Background="{DynamicResource PanelBackgroundBrush}" Padding="18,16,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
                 <TextBlock Text="监控" FontWeight="SemiBold" Margin="0,0,0,12" />
 
                 <Grid Margin="0,0,0,10">
@@ -49,10 +51,10 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Ping 间隔（秒）" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" x:Name="PingIntervalTextBox" />
+                            <TextBox Grid.Column="1" x:Name="PingIntervalTextBox" Margin="16,0,16,0"/>
                 </Grid>
 
-                <TextBlock Text="外观" FontWeight="SemiBold" Margin="0,16,0,8" />
+                
 
                 
                 <Grid Margin="0,0,0,10">
@@ -61,26 +63,26 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="失败次数" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" x:Name="FailureThresholdTextBox" />
+                    <TextBox Grid.Column="1" x:Name="FailureThresholdTextBox"  Margin="16,0,16,0"/>
                 </Grid>
 
 
-                
+                <TextBlock Text="UI" FontWeight="SemiBold" Margin="0,16,0,12" />
 
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="160" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="后台 GUI 休眠时长（秒）" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" x:Name="HibernateDurationTextBox" />
+                    <TextBlock Text="后台运行时UI休眠时长（秒）" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" x:Name="HibernateDurationTextBox" Margin="16,0,16,0"/>
                 </Grid>
 
                 <CheckBox x:Name="SilentStartupCheckBox"
                           Content="静默启动，不自动打开管理面板"
                           Margin="0,4,0,18" />
 
-                <TextBlock Text="数据目录" FontWeight="SemiBold" Margin="0,16,0,8" />
+                <TextBlock Text="数据目录" FontWeight="SemiBold" Margin="0,16,0,12" />
 
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
@@ -105,7 +107,7 @@
                 </Grid>
 
                 <!-- Test notification — no wrapping border -->
-                <Grid Margin="0,16,0,10">
+                <Grid Margin="0,16,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -121,7 +123,8 @@
 
                 <TextBlock x:Name="MessageTextBlock"
                            Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,4,0,0" />
-                </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <!-- Footer -->
