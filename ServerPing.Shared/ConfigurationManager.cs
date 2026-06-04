@@ -22,7 +22,10 @@ public class ConfigurationManager
             }
 
             var json = File.ReadAllText(ConfigFilePath);
-            return JsonSerializer.Deserialize<ServerConfiguration>(json) ?? new ServerConfiguration();
+            var configuration = JsonSerializer.Deserialize<ServerConfiguration>(json) ?? new ServerConfiguration();
+            configuration.Settings ??= new MonitoringSettings();
+            configuration.Servers ??= [];
+            return configuration;
         }
         catch
         {

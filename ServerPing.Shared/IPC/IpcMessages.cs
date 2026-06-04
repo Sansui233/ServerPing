@@ -25,3 +25,8 @@ public class RemoveServerRequest
 {
     public required string ServerId { get; set; }
 }
+
+public class UpdateSettingsRequest
+{
+    public required MonitoringSettings Settings { get; set; }
+}

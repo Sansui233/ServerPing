@@ -5,66 +5,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 ServerPing is a lightweight Windows server monitoring tool that:
-- Pings servers every 5 seconds
-- Sends Windows notifications after 3 consecutive failures
-- Provides GUI for managing server list
+- Pings servers at a configurable interval (default 5s, range 1-300s)
+- Sends Windows Toast notifications after a configurable number of consecutive failures (default 3, range 1-20)
+- Provides a WPF GUI for managing the server list and monitoring settings
 - Imports SSH profiles from Windows Terminal configuration
-- Runs as a background service with minimal resource footprint
+- Runs as a background service with system tray integration and minimal resource footprint
 
 **Technology Stack:** .NET 9, C#
 
 ## Architecture
 
-Two-process design for minimal resource usage:
+Single-entry dual-process design: the Service is the primary process; it owns the tray icon, starts monitoring, and launches the GUI on demand.
 
 ```
 ServerPing.sln
-├── ServerPing.Shared    (Class Library, net9.0)      — 共享模型和 IPC 协议
-├── ServerPing.Service   (Console App, net9.0-windows) — 后台服务
-└── ServerPing.GUI       (WPF App, net9.0-windows)     — 管理面板
+├── ServerPing.Shared    (Class Library, net9.0)       — shared models and IPC protocol
+├── ServerPing.Service   (Console App, net9.0-windows)  — background daemon, tray, IPC server
+└── ServerPing.GUI       (WPF App, net9.0-windows)      — management panel (on-demand, exits fully when closed)
 ```
 
-**ServerPing.Shared**
-- `Models/Server.cs` — 服务器模型：Id, Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures
-- `Models/ServerStatus.cs` — 枚举：Online, Offline, Unknown
-- `Models/ServerConfiguration.cs` — 配置根对象，包含 `List<Server>`
-- `ConfigurationManager.cs` — 读写 `%APPDATA%\ServerPing\servers.json`
-- `IPC/MessageType.cs` — IPC 命令枚举：GetServers, UpdateServers, AddServer, RemoveServer, GetStatus
-- `IPC/IpcMessages.cs` — IPC 消息/响应类型、AddServerRequest、RemoveServerRequest
+### ServerPing.Shared
 
-**ServerPing.Service** (后台常驻)
-- `Program.cs` — 主入口，整合所有组件，使用 `Application.Run()` 驱动消息循环
-- `PingService.cs` — Ping 引擎，每服务器独立 `System.Threading.Timer`（5秒间隔），连续3次失败触发状态变更事件
-- `NotificationService.cs` — Windows Toast 通知（使用 `ToastNotificationManager` API）
-- `TrayService.cs` — 系统托盘图标和右键菜单（`System.Windows.Forms.NotifyIcon`）
-- `IpcServer.cs` — Named Pipe 服务端（`\\.\pipe\ServerPing`），处理 GUI 发来的命令
-- `GuiProcessManager.cs` — 启动/检测 GUI.exe 进程
+| File | Purpose |
+|------|---------|
+| `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures |
+| `Models/ServerStatus.cs` | Enum: Unknown, Online, Offline |
+| `Models/ServerConfiguration.cs` | Config root: `List<Server>` + `MonitoringSettings` |
+| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (1-300), FailureThreshold (1-20), SilentStartup. Exposes `Clone()`. |
+| `Models/ServerStats.cs` | Stats snapshot: `ServerStats { ServerId, LastHour, LastDay }`, each window is `PingStatsWindow { SuccessCount, FailureCount, AvailabilityPercent }` |
+| `ConfigurationManager.cs` | Read/write `%APPDATA%\ServerPing\servers.json`. Returns empty config on failure. |
+| `IPC/MessageType.cs` | IPC command enum (see IPC section below) |
+| `IPC/IpcMessages.cs` | `IpcMessage`, `IpcResponse`, `AddServerRequest`, `RemoveServerRequest`, `UpdateSettingsRequest` |
 
-**ServerPing.GUI** (按需启动，关闭后完全退出)
-- `App.xaml.cs` — 单实例保护（Mutex）
-- `MainWindow.xaml` — 主界面：服务器列表 DataGrid + 添加面板 + 状态栏
-- `ViewModels/MainViewModel.cs` — MVVM 主 ViewModel，3秒轮询 IPC 刷新状态
-- `ViewModels/ServerViewModel.cs` — 服务器行 ViewModel
-- `Services/IpcClient.cs` — Named Pipe 客户端
-- `Services/WindowsTerminalParser.cs` — 解析 Windows Terminal settings.json，提取 SSH Profile
-- `ImportDialog.xaml` — SSH Profile 导入选择对话框
-- `Converters/EnableToggleConverter.cs` — 启用/禁用按钮文本转换
+### ServerPing.Service (always running)
+
+| File | Purpose |
+|------|---------|
+| `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
+| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. 24h rolling history for stats. Exposes `Pause()`/`Resume()`. |
+| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. |
+| `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Pause/Resume toggle fires `MonitoringToggleRequested` event. |
+| `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
+| `GuiProcessManager.cs` | Finds / launches `ServerPing.GUI.exe`. `CloseGuiIfRunning()` tries graceful close then kills. |
+
+### ServerPing.GUI (on-demand, fully exits when closed)
+
+| File | Purpose |
+|------|---------|
+| `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Dark theme resource dictionary (brushes, button/datagrid/textbox styles, CornerRadius=4). |
+| `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
+| `SettingsDialog.xaml` / `SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification button. Calls `MainViewModel.SaveSettingsAsync`. |
+| `ImportDialog.xaml` / `ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
+| `ViewModels/ViewModelBase.cs` | `INotifyPropertyChanged` base with `SetProperty<T>`. |
+| `ViewModels/RelayCommand.cs` | `ICommand` implementation supporting async delegates and CanExecute. |
+| `ViewModels/MainViewModel.cs` | MVVM brain. 3-second `DispatcherTimer` refresh loop. All IPC calls routed through `IpcClient`. |
+| `ViewModels/ServerViewModel.cs` | Per-row ViewModel. Wraps `Server` + `ServerStats`. Computed properties: `StatusText`, `LastPingTimeText`, `LastHourStatsText`, `LastHourAvailabilityText`. |
+| `ViewModels/SshProfileViewModel.cs` | Wraps `SshProfile` with `IsSelected` for import dialog binding. |
+| `Services/IpcClient.cs` | Named Pipe client. 3-second connect timeout. All methods async. |
+| `Services/WindowsTerminalParser.cs` | Parses `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState/settings.json`. Extracts SSH profiles via regex. |
+| `Converters/EnableToggleConverter.cs` | `true` → "禁用", `false` → "启用". |
 
 ## IPC Protocol
 
-通过 Named Pipe `ServerPing` 通信，JSON 格式消息：
-- **请求:** `IpcMessage { Type: MessageType, Data: object? }`
-- **响应:** `IpcResponse { Success: bool, ErrorMessage?: string, Data?: object }`
-- 单连接模式：每次请求建立新连接，完成后断开
+Named Pipe `\\.\pipe\ServerPing`, JSON, one request/response per connection:
+
+- **Request:** `IpcMessage { Type: MessageType, Data: object? }`
+- **Response:** `IpcResponse { Success: bool, ErrorMessage?: string, Data?: object }`
+
+| MessageType | Data In | Data Out |
+|-------------|---------|----------|
+| `GetServers` | — | `List<Server>` |
+| `UpdateServers` | `List<Server>` | — |
+| `AddServer` | `AddServerRequest { Name, Host }` | `Server` (newly created) |
+| `RemoveServer` | `RemoveServerRequest { ServerId }` | — |
+| `GetStatus` | — | `{ OnlineCount, TotalCount }` |
+| `GetSettings` | — | `MonitoringSettings` |
+| `UpdateSettings` | `UpdateSettingsRequest { Settings }` | `MonitoringSettings` (saved) |
+| `TestNotification` | — | — |
+| `GetServerStats` | — | `List<ServerStats>` |
+
+**Serialization note:** `IpcResponse.Data` is `object?`. Both sides do a double round-trip: `JsonSerializer.Serialize(data)` → `JsonSerializer.Deserialize<T>(json)` to convert the `JsonElement` back to a typed object.
 
 ## Configuration
 
-- 配置文件位置：`%APPDATA%\ServerPing\servers.json`
-- 格式：`ServerConfiguration { Servers: List<Server> }`
-- 由 Service 端读写，GUI 通过 IPC 间接修改
+- Location: `%APPDATA%\ServerPing\servers.json`
+- Format: `ServerConfiguration { Servers: List<Server>, Settings: MonitoringSettings }`
+- Written by Service (via IpcServer handlers on every mutation). Read on startup.
+- GUI never reads the file directly — always goes through IPC.
 
-Windows Terminal settings 位置：
-- `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState\settings.json`
+Windows Terminal settings location:
+- `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState/settings.json`
+
+## Key Design Decisions
+
+- **Dual-process:** Service stays resident for monitoring; GUI is launched on demand and exits fully. Keeps idle memory low.
+- **Single Named Pipe (one connection at a time):** Sufficient since only one GUI instance can run (Mutex-guarded). Avoids complexity of concurrent IPC.
+- **3-second GUI refresh:** `DispatcherTimer` on UI thread polls `GetServers` + `GetStats`. No push notifications from Service to GUI — acceptable latency.
+- **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
+- **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
 
 ## Development Commands
 
@@ -72,47 +110,55 @@ Windows Terminal settings 位置：
 # Build entire solution
 dotnet build
 
-# Run Service (console mode for development)
+# Run Service (console mode)
 dotnet run --project ServerPing.Service
 
-# Run GUI
+# Run GUI (Service must be running first)
 dotnet run --project ServerPing.GUI
 
 # Run tests
 dotnet test
 
-# Publish self-contained executables
-dotnet publish ServerPing.Service -c Release -r win-x64 --self-contained
-dotnet publish ServerPing.GUI -c Release -r win-x64 --self-contained
+# Publish self-contained executables to a single directory (win-x64)
+dotnet publish ServerPing.Service -c Release -r win-x64 --self-contained -o publish
+dotnet publish ServerPing.GUI    -c Release -r win-x64 --self-contained -o publish
 ```
 
-## Current Status (Phase 1-5 Complete)
+### Publish
 
-已完成的核心功能：
-- ✅ 项目结构和共享模型
-- ✅ Ping 引擎（5秒间隔，连续3次失败触发通知）
-- ✅ Windows Toast 通知（离线/恢复）
-- ✅ 系统托盘图标和右键菜单
-- ✅ Named Pipe IPC（Service ↔ GUI）
-- ✅ WPF 管理面板（MVVM，添加/删除/启用禁用/实时状态）
-- ✅ Windows Terminal SSH Profile 导入
-- ✅ GUI 单实例保护（Mutex）
+两个项目必须 publish 到同一目录（`-o publish`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
 
-## Pending Work (Phase 6-7)
+| 文件 | 说明 |
+|------|------|
+| `publish/ServerPing.exe`     | **统一入口** — 启动后常驻托盘，管理监控与 GUI 生命周期 |
+| `publish/ServerPing.GUI.exe` | 管理面板 — 由 Service 按需启动，用户不需要手动运行 |
 
-后续待实现功能：
-- 托盘右键菜单显示各服务器状态
-- Ping 间隔可配置化（当前硬编码 5 秒）
-- 失败通知阈值可配置化（当前硬编码连续 3 次）
-- 托盘图标状态指示（全在线 vs 有离线用不同图标/颜色）
-- 暂停监控功能实际接线（当前 MonitoringToggleRequested 仅打印日志）
-- 自包含发布和打包
-- 开机自启动支持
-- 长时间运行稳定性测试
+## Current Status
+
+All core features complete:
+- ✅ Project structure and shared models
+- ✅ Ping engine (configurable interval, configurable failure threshold)
+- ✅ Windows Toast notifications (offline / recovery / test)
+- ✅ System tray icon with live server status and availability %
+- ✅ Tray Pause/Resume monitoring toggle
+- ✅ Named Pipe IPC (Service ↔ GUI)
+- ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)
+- ✅ 1h / 24h ping statistics with availability %
+- ✅ Settings dialog (ping interval, failure threshold, silent startup)
+- ✅ Windows Terminal SSH Profile import
+- ✅ GUI single-instance protection (Mutex)
+- ✅ Single entry point (Service launches GUI, SilentStartup option)
+
+## Pending Work
+
+- 开机自启动选项 (autostart on Windows login)
+- 托盘图标动态更新（显示在线比例）
 
 ## Project Constraints
 
 - **Target Framework:** .NET 9
-- **Platform:** Windows-only (uses Windows notifications and system tray APIs)
+- **Platform:** Windows-only (Windows notifications, system tray, WPF)
 - **Resource Usage:** Service must stay under 20MB memory when GUI is closed
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
+
+You Must update this file to track this repo whenever the architecture or status changes.

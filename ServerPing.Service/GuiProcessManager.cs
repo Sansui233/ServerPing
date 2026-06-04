@@ -8,6 +8,12 @@ public class GuiProcessManager
 
     public void LaunchGui()
     {
+        if (IsGuiRunning())
+        {
+            Console.WriteLine("GUI 管理面板已在运行");
+            return;
+        }
+
         var guiPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, GuiExecutableName);
 
         if (!File.Exists(guiPath))
@@ -37,5 +43,34 @@ public class GuiProcessManager
     {
         var processName = Path.GetFileNameWithoutExtension(GuiExecutableName);
         return Process.GetProcessesByName(processName).Length > 0;
+    }
+
+    public void CloseGuiIfRunning()
+    {
+        var processName = Path.GetFileNameWithoutExtension(GuiExecutableName);
+        foreach (var process in Process.GetProcessesByName(processName))
+        {
+            try
+            {
+                if (process.CloseMainWindow() && process.WaitForExit(3000))
+                {
+                    continue;
+                }
+
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                    process.WaitForExit(3000);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"关闭 GUI 失败: {ex.Message}");
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
     }
 }

@@ -7,5 +7,9 @@ public enum MessageType
     AddServer,
     RemoveServer,
     GetStatus,
+    GetSettings,
+    UpdateSettings,
+    TestNotification,
+    GetServerStats,
     Response
 }

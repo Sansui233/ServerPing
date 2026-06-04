@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using ServerPing.GUI.Services;
+using ServerPing.Shared.Models;
 
 namespace ServerPing.GUI.ViewModels;
 
@@ -13,8 +14,6 @@ public class MainViewModel : ViewModelBase
     private ServerViewModel? _selectedServer;
     private string _statusMessage = "正在连接服务...";
     private bool _isConnected;
-    private string _newServerName = "";
-    private string _newServerHost = "";
 
     public ObservableCollection<ServerViewModel> Servers { get; } = [];
 
@@ -36,33 +35,18 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _isConnected, value);
     }
 
-    public string NewServerName
-    {
-        get => _newServerName;
-        set => SetProperty(ref _newServerName, value);
-    }
-
-    public string NewServerHost
-    {
-        get => _newServerHost;
-        set => SetProperty(ref _newServerHost, value);
-    }
-
     public RelayCommand AddServerCommand { get; }
     public RelayCommand RemoveServerCommand { get; }
     public RelayCommand ToggleServerCommand { get; }
-    public RelayCommand RefreshCommand { get; }
     public RelayCommand ImportFromTerminalCommand { get; }
 
     public MainViewModel()
     {
-        AddServerCommand = new RelayCommand(async () => await AddServerAsync(),
-            () => !string.IsNullOrWhiteSpace(NewServerName) && !string.IsNullOrWhiteSpace(NewServerHost));
+        AddServerCommand = new RelayCommand(async () => await AddNewRowAsync());
         RemoveServerCommand = new RelayCommand(async (p) => await RemoveServerAsync(p),
             (p) => p is ServerViewModel);
         ToggleServerCommand = new RelayCommand(async (p) => await ToggleServerAsync(p),
             (p) => p is ServerViewModel);
-        RefreshCommand = new RelayCommand(async () => await RefreshServersAsync());
         ImportFromTerminalCommand = new RelayCommand(ImportFromTerminal);
 
         _refreshTimer = new DispatcherTimer
@@ -112,6 +96,8 @@ public class MainViewModel : ViewModelBase
             var onlineCount = servers.Count(s => s.Status == Shared.Models.ServerStatus.Online);
             StatusMessage = $"已连接 - {onlineCount}/{servers.Count} 在线";
             IsConnected = true;
+
+            await RefreshStatsAsync();
         }
         catch
         {
@@ -120,20 +106,21 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    private async Task AddServerAsync()
+    private async Task RefreshStatsAsync()
     {
-        var name = NewServerName.Trim();
-        var host = NewServerHost.Trim();
+        var stats = await _ipcClient.GetServerStatsAsync();
+        foreach (var stat in stats)
+        {
+            Servers.FirstOrDefault(s => s.Id == stat.ServerId)?.UpdateStats(stat);
+        }
+    }
 
-        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(host))
-            return;
-
-        var server = await _ipcClient.AddServerAsync(name, host);
+    private async Task AddNewRowAsync()
+    {
+        var server = await _ipcClient.AddServerAsync("新服务器", "0.0.0.0");
         if (server != null)
         {
             Servers.Add(ServerViewModel.FromModel(server));
-            NewServerName = "";
-            NewServerHost = "";
         }
         else
         {
@@ -167,6 +154,41 @@ public class MainViewModel : ViewModelBase
 
         var allServers = Servers.Select(s => s.ToModel()).ToList();
         await _ipcClient.UpdateServersAsync(allServers);
+    }
+
+    public async Task SaveServerAsync(ServerViewModel server)
+    {
+        server.Name = server.Name.Trim();
+        server.Host = server.Host.Trim();
+
+        if (string.IsNullOrWhiteSpace(server.Name) || string.IsNullOrWhiteSpace(server.Host))
+        {
+            MessageBox.Show("名称和地址不能为空。", "输入无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            await RefreshServersAsync();
+            return;
+        }
+
+        var allServers = Servers.Select(s => s.ToModel()).ToList();
+        if (!await _ipcClient.UpdateServersAsync(allServers))
+        {
+            MessageBox.Show("保存服务器失败，请检查服务是否运行。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    public async Task<MonitoringSettings> LoadSettingsAsync()
+    {
+        return await _ipcClient.GetSettingsAsync();
+    }
+
+    public async Task<bool> SaveSettingsAsync(MonitoringSettings settings)
+    {
+        var saved = await _ipcClient.UpdateSettingsAsync(settings);
+        return saved != null;
+    }
+
+    public async Task<bool> TestNotificationAsync()
+    {
+        return await _ipcClient.TestNotificationAsync();
     }
 
     private async void ImportFromTerminal()

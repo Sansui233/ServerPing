@@ -6,12 +6,12 @@ namespace ServerPing.Service;
 
 public class NotificationService
 {
-    public void ShowServerOfflineNotification(Server server)
+    public void ShowServerOfflineNotification(Server server, int failureThreshold)
     {
         var content = new ToastContentBuilder()
             .AddText("服务器离线")
             .AddText($"{server.Name} ({server.Host})")
-            .AddText($"连续 3 次 Ping 失败，最后检查时间：{server.LastPingTime:HH:mm:ss}")
+            .AddText($"连续 {failureThreshold} 次 Ping 失败，最后检查时间：{server.LastPingTime:HH:mm:ss}")
             .GetToastContent();
 
         var toast = new ToastNotification(content.GetXml());
@@ -24,6 +24,18 @@ public class NotificationService
             .AddText("服务器恢复在线")
             .AddText($"{server.Name} ({server.Host})")
             .AddText($"服务器已恢复连接")
+            .GetToastContent();
+
+        var toast = new ToastNotification(content.GetXml());
+        ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+    }
+
+    public void ShowTestNotification()
+    {
+        var content = new ToastContentBuilder()
+            .AddText("ServerPing 测试通知")
+            .AddText("Windows 通知功能正常")
+            .AddText($"发送时间：{DateTime.Now:HH:mm:ss}")
             .GetToastContent();
 
         var toast = new ToastNotification(content.GetXml());

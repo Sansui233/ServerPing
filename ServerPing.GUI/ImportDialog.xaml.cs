@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using ServerPing.GUI.Services;
 using ServerPing.GUI.ViewModels;
 
@@ -25,6 +26,11 @@ public partial class ImportDialog : Window
     private void SelectAll_Click(object sender, RoutedEventArgs e)
     {
         foreach (var p in _profiles) p.IsSelected = true;
+    }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        DragMove();
     }
 
     private void SelectNone_Click(object sender, RoutedEventArgs e)

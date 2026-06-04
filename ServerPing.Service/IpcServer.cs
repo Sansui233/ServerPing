@@ -12,11 +12,13 @@ public class IpcServer : IDisposable
     private const string PipeName = "ServerPing";
     private readonly CancellationTokenSource _cts = new();
     private readonly PingService _pingService;
+    private readonly NotificationService _notificationService;
     private Task? _serverTask;
 
-    public IpcServer(PingService pingService)
+    public IpcServer(PingService pingService, NotificationService notificationService)
     {
         _pingService = pingService;
+        _notificationService = notificationService;
     }
 
     public void Start()
@@ -105,7 +107,8 @@ public class IpcServer : IDisposable
 
                     if (serverList != null)
                     {
-                        var config = new ServerConfiguration { Servers = serverList };
+                        var config = ConfigurationManager.Load();
+                        config.Servers = serverList;
                         ConfigurationManager.Save(config);
                         _pingService.UpdateServers(serverList);
 
@@ -163,6 +166,43 @@ public class IpcServer : IDisposable
                     {
                         Success = true,
                         Data = new { OnlineCount = onlineCount, TotalCount = statusServers.Count }
+                    };
+
+                case MessageType.GetSettings:
+                    return new IpcResponse
+                    {
+                        Success = true,
+                        Data = _pingService.GetSettings()
+                    };
+
+                case MessageType.UpdateSettings:
+                    var settingsRequest = JsonSerializer.Deserialize<UpdateSettingsRequest>(
+                        JsonSerializer.Serialize(message.Data));
+
+                    if (settingsRequest != null)
+                    {
+                        var config = ConfigurationManager.Load();
+                        config.Settings = settingsRequest.Settings;
+                        ConfigurationManager.Save(config);
+                        _pingService.UpdateSettings(config.Settings);
+
+                        return new IpcResponse
+                        {
+                            Success = true,
+                            Data = config.Settings
+                        };
+                    }
+                    break;
+
+                case MessageType.TestNotification:
+                    _notificationService.ShowTestNotification();
+                    return new IpcResponse { Success = true };
+
+                case MessageType.GetServerStats:
+                    return new IpcResponse
+                    {
+                        Success = true,
+                        Data = _pingService.GetStats()
                     };
             }
 

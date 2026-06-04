@@ -65,6 +65,65 @@ public class IpcClient
         return response.Success;
     }
 
+    public async Task<MonitoringSettings> GetSettingsAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.GetSettings
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<MonitoringSettings>(json) ?? new MonitoringSettings();
+        }
+
+        return new MonitoringSettings();
+    }
+
+    public async Task<MonitoringSettings?> UpdateSettingsAsync(MonitoringSettings settings)
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.UpdateSettings,
+            Data = new UpdateSettingsRequest { Settings = settings }
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<MonitoringSettings>(json);
+        }
+
+        return null;
+    }
+
+    public async Task<bool> TestNotificationAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.TestNotification
+        });
+
+        return response.Success;
+    }
+
+    public async Task<List<ServerStats>> GetServerStatsAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.GetServerStats
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<List<ServerStats>>(json) ?? [];
+        }
+
+        return [];
+    }
+
     private async Task<IpcResponse> SendMessageAsync(IpcMessage message)
     {
         try

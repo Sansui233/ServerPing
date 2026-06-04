@@ -11,6 +11,8 @@ public class ServerViewModel : ViewModelBase
     private ServerStatus _status = ServerStatus.Unknown;
     private DateTime? _lastPingTime;
     private int _consecutiveFailures;
+    private PingStatsWindow _lastHourStats = new();
+    private PingStatsWindow _lastDayStats = new();
 
     public string Id
     {
@@ -62,6 +64,26 @@ public class ServerViewModel : ViewModelBase
         set => SetProperty(ref _consecutiveFailures, value);
     }
 
+    public PingStatsWindow LastHourStats
+    {
+        get => _lastHourStats;
+        set
+        {
+            if (SetProperty(ref _lastHourStats, value))
+                NotifyStatsChanged();
+        }
+    }
+
+    public PingStatsWindow LastDayStats
+    {
+        get => _lastDayStats;
+        set
+        {
+            if (SetProperty(ref _lastDayStats, value))
+                NotifyStatsChanged();
+        }
+    }
+
     public string StatusText => Status switch
     {
         ServerStatus.Online => "在线",
@@ -70,6 +92,24 @@ public class ServerViewModel : ViewModelBase
     };
 
     public string LastPingTimeText => LastPingTime?.ToString("HH:mm:ss") ?? "-";
+    public string LastHourStatsText => FormatStats(LastHourStats);
+    public string LastDayStatsText => FormatStats(LastDayStats);
+    public string LastHourAvailabilityText => FormatAvailability(LastHourStats.AvailabilityPercent);
+
+    private static string FormatStats(PingStatsWindow stats) =>
+        stats.TotalCount == 0
+            ? "0 / 0 / 0"
+            : $"{stats.SuccessCount} / {stats.FailureCount} / {stats.TotalCount}";
+
+    private static string FormatAvailability(double? value) =>
+        value.HasValue ? $"{value.Value:0.#}%" : "--";
+
+    private void NotifyStatsChanged()
+    {
+        OnPropertyChanged(nameof(LastHourStatsText));
+        OnPropertyChanged(nameof(LastDayStatsText));
+        OnPropertyChanged(nameof(LastHourAvailabilityText));
+    }
 
     public static ServerViewModel FromModel(Server server) => new()
     {
@@ -95,9 +135,17 @@ public class ServerViewModel : ViewModelBase
 
     public void UpdateFrom(Server server)
     {
+        Name = server.Name;
+        Host = server.Host;
         Status = server.Status;
         LastPingTime = server.LastPingTime;
         ConsecutiveFailures = server.ConsecutiveFailures;
         IsEnabled = server.IsEnabled;
+    }
+
+    public void UpdateStats(ServerStats stats)
+    {
+        LastHourStats = stats.LastHour;
+        LastDayStats = stats.LastDay;
     }
 }
