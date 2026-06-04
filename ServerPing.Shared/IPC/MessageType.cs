@@ -10,6 +10,7 @@ public enum MessageType
     GetSettings,
     UpdateSettings,
     TestNotification,
+    TestNotificationSound,
     GetServerStats,
     Response
 }

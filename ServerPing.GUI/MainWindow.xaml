@@ -5,6 +5,7 @@
         Title="ServerPing"
         MinHeight="310" MaxHeight="560" MaxWidth="600"
         SizeToContent="Height"
+        Icon="Assets/App.Ico/Icon-tray_128x128.ico"
         WindowStyle="None"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"

@@ -227,6 +227,8 @@ public class MainViewModel : ViewModelBase
 
     public async Task<bool> TestNotificationAsync() => await _ipcClient.TestNotificationAsync();
 
+    public async Task<bool> TestNotificationSoundAsync() => await _ipcClient.TestNotificationSoundAsync();
+
     private async void ImportFromTerminal()
     {
         try

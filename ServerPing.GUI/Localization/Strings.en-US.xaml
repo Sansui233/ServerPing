@@ -14,6 +14,8 @@
     <sys:String x:Key="Settings.Open">Open</sys:String>
     <sys:String x:Key="Settings.TestNotification">Test notification</sys:String>
     <sys:String x:Key="Settings.TestNotificationDescription">Send a Windows Toast test message</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSound">Test notification sound</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSoundDescription">Play the default Windows notification sound</sys:String>
     <sys:String x:Key="Settings.Test">Test</sys:String>
     <sys:String x:Key="Settings.Cancel">Cancel</sys:String>
     <sys:String x:Key="Settings.Save">Save</sys:String>
@@ -47,6 +49,9 @@
     <sys:String x:Key="Message.SendingTestNotification">Sending test notification...</sys:String>
     <sys:String x:Key="Message.TestNotificationSent">Test notification sent.</sys:String>
     <sys:String x:Key="Message.TestNotificationFailed">Failed to send test notification.</sys:String>
+    <sys:String x:Key="Message.PlayingTestNotificationSound">Playing test sound...</sys:String>
+    <sys:String x:Key="Message.TestNotificationSoundPlayed">Test sound played.</sys:String>
+    <sys:String x:Key="Message.TestNotificationSoundFailed">Failed to play test sound.</sys:String>
     <sys:String x:Key="Validation.PingInterval">Ping interval must be between {0} and {1} seconds.</sys:String>
     <sys:String x:Key="Validation.FailureThreshold">Failure notification count must be between {0} and {1}.</sys:String>
     <sys:String x:Key="Validation.HibernateDuration">Window hibernation duration must be between {0} and {1} seconds.</sys:String>

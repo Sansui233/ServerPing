@@ -129,7 +129,7 @@
                 </Grid>
 
                 <!-- Test notification — no wrapping border -->
-                <Grid Margin="0,16,0,12">
+                <Grid Margin="0,16,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -141,6 +141,20 @@
                     </StackPanel>
                     <Button Grid.Column="1" Content="{DynamicResource Settings.Test}" Padding="12,5" Margin="16,0,16,0"
                             Click="TestNotification_Click" VerticalAlignment="Center" />
+                </Grid>
+
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Settings.TestNotificationSound}" FontWeight="SemiBold" />
+                        <TextBlock Text="{DynamicResource Settings.TestNotificationSoundDescription}"
+                                   Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="{DynamicResource Settings.Test}" Padding="12,5" Margin="16,0,16,0"
+                            Click="TestNotificationSound_Click" VerticalAlignment="Center" />
                 </Grid>
 
                 <TextBlock x:Name="MessageTextBlock"

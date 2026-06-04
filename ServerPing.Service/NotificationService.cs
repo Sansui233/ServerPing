@@ -1,11 +1,21 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using ServerPing.Shared.Models;
+using System.Media;
+using System.Runtime.InteropServices;
 using Windows.UI.Notifications;
 
 namespace ServerPing.Service;
 
 public class NotificationService
 {
+    private const uint SndAsync = 0x0001;
+    private const uint SndAlias = 0x00010000;
+    private const uint SndNoDefault = 0x0002;
+    private const string NotificationSoundAlias = "SystemNotification";
+
+    [DllImport("winmm.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool PlaySound(string? pszSound, nint hmod, uint fdwSound);
+
     public void ShowServerOfflineNotification(Server server, int failureThreshold)
     {
         var content = new ToastContentBuilder()
@@ -16,6 +26,7 @@ public class NotificationService
 
         var toast = new ToastNotification(content.GetXml());
         ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+        PlayNotificationSound();
     }
 
     public void ShowServerOnlineNotification(Server server)
@@ -40,5 +51,13 @@ public class NotificationService
 
         var toast = new ToastNotification(content.GetXml());
         ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+    }
+
+    public void PlayNotificationSound()
+    {
+        if (PlaySound(NotificationSoundAlias, 0, SndAlias | SndAsync | SndNoDefault))
+            return;
+
+        SystemSounds.Exclamation.Play();
     }
 }

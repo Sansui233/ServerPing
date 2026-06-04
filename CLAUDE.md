@@ -43,7 +43,7 @@ ServerPing.sln
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
 | `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. 24h rolling history for stats. Exposes `Pause()`/`Resume()`. |
-| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. |
+| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications also play the Windows notification sound alias with a system-sound fallback. |
 | `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Pause/Resume toggle fires `MonitoringToggleRequested` event. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
 | `GuiProcessManager.cs` | Finds / launches `ServerPing.GUI.exe`. `CloseGuiIfRunning()` tries graceful close then kills. |
@@ -54,7 +54,7 @@ ServerPing.sln
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Dark theme resource dictionary (brushes, button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
-| `SettingsDialog.xaml` / `SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification button. Calls `MainViewModel.SaveSettingsAsync`. |
+| `SettingsDialog.xaml` / `SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `ImportDialog.xaml` / `ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `ViewModels/ViewModelBase.cs` | `INotifyPropertyChanged` base with `SetProperty<T>`. |
 | `ViewModels/RelayCommand.cs` | `ICommand` implementation supporting async delegates and CanExecute. |
@@ -82,6 +82,7 @@ Named Pipe `\\.\pipe\ServerPing`, JSON, one request/response per connection:
 | `GetSettings` | — | `MonitoringSettings` |
 | `UpdateSettings` | `UpdateSettingsRequest { Settings }` | `MonitoringSettings` (saved) |
 | `TestNotification` | — | — |
+| `TestNotificationSound` | — | — |
 | `GetServerStats` | — | `List<ServerStats>` |
 
 **Serialization note:** `IpcResponse.Data` is `object?`. Both sides do a double round-trip: `JsonSerializer.Serialize(data)` → `JsonSerializer.Deserialize<T>(json)` to convert the `JsonElement` back to a typed object.
@@ -145,6 +146,7 @@ All core features complete:
 - ✅ Project structure and shared models
 - ✅ Ping engine (configurable interval, configurable failure threshold)
 - ✅ Windows Toast notifications (offline / recovery / test)
+- ✅ Windows default notification sound for offline alerts + GUI sound test
 - ✅ System tray icon with live server status and availability %
 - ✅ Tray Pause/Resume monitoring toggle
 - ✅ Named Pipe IPC (Service ↔ GUI)

@@ -108,6 +108,16 @@ public class IpcClient
         return response.Success;
     }
 
+    public async Task<bool> TestNotificationSoundAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.TestNotificationSound
+        });
+
+        return response.Success;
+    }
+
     public async Task<List<ServerStats>> GetServerStatsAsync()
     {
         var response = await SendMessageAsync(new IpcMessage

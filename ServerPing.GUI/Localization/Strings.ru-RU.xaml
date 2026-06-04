@@ -14,6 +14,8 @@
     <sys:String x:Key="Settings.Open">Открыть</sys:String>
     <sys:String x:Key="Settings.TestNotification">Тест уведомления</sys:String>
     <sys:String x:Key="Settings.TestNotificationDescription">Отправить тестовое уведомление Windows Toast</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSound">Тест звука уведомления</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSoundDescription">Воспроизвести стандартный звук уведомления Windows</sys:String>
     <sys:String x:Key="Settings.Test">Тест</sys:String>
     <sys:String x:Key="Settings.Cancel">Отмена</sys:String>
     <sys:String x:Key="Settings.Save">Сохранить</sys:String>
@@ -47,6 +49,9 @@
     <sys:String x:Key="Message.SendingTestNotification">Отправка тестового уведомления...</sys:String>
     <sys:String x:Key="Message.TestNotificationSent">Тестовое уведомление отправлено.</sys:String>
     <sys:String x:Key="Message.TestNotificationFailed">Не удалось отправить тестовое уведомление.</sys:String>
+    <sys:String x:Key="Message.PlayingTestNotificationSound">Воспроизведение тестового звука...</sys:String>
+    <sys:String x:Key="Message.TestNotificationSoundPlayed">Тестовый звук воспроизведен.</sys:String>
+    <sys:String x:Key="Message.TestNotificationSoundFailed">Не удалось воспроизвести тестовый звук.</sys:String>
     <sys:String x:Key="Validation.PingInterval">Интервал ping должен быть от {0} до {1} сек.</sys:String>
     <sys:String x:Key="Validation.FailureThreshold">Число сбоев для уведомления должно быть от {0} до {1}.</sys:String>
     <sys:String x:Key="Validation.HibernateDuration">Длительность сна окна должна быть от {0} до {1} сек.</sys:String>

@@ -204,6 +204,10 @@ public class IpcServer : IDisposable
                     _notificationService.ShowTestNotification();
                     return new IpcResponse { Success = true };
 
+                case MessageType.TestNotificationSound:
+                    _notificationService.PlayNotificationSound();
+                    return new IpcResponse { Success = true };
+
                 case MessageType.GetServerStats:
                     return new IpcResponse
                     {

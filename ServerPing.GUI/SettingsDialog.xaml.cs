@@ -72,6 +72,15 @@ public partial class SettingsDialog : Window
             : LocalizationService.Get("Message.TestNotificationFailed");
     }
 
+    private async void TestNotificationSound_Click(object sender, RoutedEventArgs e)
+    {
+        MessageTextBlock.Text = LocalizationService.Get("Message.PlayingTestNotificationSound");
+        var played = await _viewModel.TestNotificationSoundAsync();
+        MessageTextBlock.Text = played
+            ? LocalizationService.Get("Message.TestNotificationSoundPlayed")
+            : LocalizationService.Get("Message.TestNotificationSoundFailed");
+    }
+
     private void OpenDataDirectory_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(ConfigurationManager.ConfigDirectory);
