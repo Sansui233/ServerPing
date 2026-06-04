@@ -12,7 +12,9 @@
     </WindowChrome.WindowChrome>
 
     <Border Background="{DynamicResource AppBackgroundBrush}"
-            BorderBrush="{DynamicResource BorderBrushDark}" BorderThickness="1">
+            BorderBrush="{DynamicResource BorderBrushDark}"
+            BorderThickness="1"
+            CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="42" />
@@ -28,7 +30,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="设置" FontSize="13" FontWeight="SemiBold" Margin="14,0,0,0" />
-                <Button Grid.Column="1" Style="{StaticResource TitleBarCloseButton}"
+                <Button Grid.Column="1" Style="{StaticResource TitleBarCloseButton}" Margin="0,0,2,0"
                         Width="38" Height="38" Click="Close_Click">
                     <Path Data="{StaticResource Icon.X}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -101,9 +103,9 @@
                                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                                    VerticalAlignment="Center" />
                     </DockPanel>
-                    <Button Grid.Column="1" Content="打开" Padding="12,5"
+                            <Button Grid.Column="1" Content="打开" Padding="12,5" Margin="16,0,16,0"
                             Click="OpenDataDirectory_Click" VerticalAlignment="Center"
-                            HorizontalAlignment="Right" Margin="10,0,0,0" />
+                            HorizontalAlignment="Right"/>
                 </Grid>
 
                 <!-- Test notification — no wrapping border -->
@@ -117,7 +119,7 @@
                         <TextBlock Text="发送一条 Windows Toast 测试消息"
                                    Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,3,0,0" />
                     </StackPanel>
-                    <Button Grid.Column="1" Content="测试" Padding="12,5"
+                    <Button Grid.Column="1" Content="测试" Padding="12,5" Margin="16,0,16,0"
                             Click="TestNotification_Click" VerticalAlignment="Center" />
                 </Grid>
 

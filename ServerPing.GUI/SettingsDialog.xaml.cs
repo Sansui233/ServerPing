@@ -23,6 +23,12 @@ public partial class SettingsDialog : Window
         DataDirectoryTextBlock.Text = ConfigurationManager.ConfigDirectory;
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        NativeWindowStyler.ApplyWindows11RoundedCorners(this);
+    }
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         DragMove();

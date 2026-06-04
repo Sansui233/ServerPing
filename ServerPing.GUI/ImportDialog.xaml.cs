@@ -20,6 +20,12 @@ public partial class ImportDialog : Window
         ProfileGrid.ItemsSource = _profiles;
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        NativeWindowStyler.ApplyWindows11RoundedCorners(this);
+    }
+
     private void SelectAll_Click(object sender, RoutedEventArgs e)
     {
         foreach (var p in _profiles) p.IsSelected = true;

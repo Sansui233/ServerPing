@@ -19,6 +19,12 @@ public partial class MainWindow : Window
         PreviewMouseLeftButtonDown += ClearTextBoxFocus;
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        NativeWindowStyler.ApplyWindows11RoundedCorners(this);
+    }
+
     private void ClearTextBoxFocus(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is not DependencyObject source) return;

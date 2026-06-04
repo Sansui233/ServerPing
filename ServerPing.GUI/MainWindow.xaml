@@ -11,14 +11,17 @@
         Loaded="Window_Loaded" Closing="Window_Closing">
 
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="-1" NonClientFrameEdges="None" />
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="0" NonClientFrameEdges="None" />
     </WindowChrome.WindowChrome>
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
 
-    <Border Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushDark}" BorderThickness="1">
+    <Border Background="{DynamicResource AppBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderBrushDark}"
+            BorderThickness="1"
+            CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="42" />
@@ -117,7 +120,7 @@
                 </Button>
 
                 <!-- Close -->
-                <Button Grid.Column="6" Style="{StaticResource TitleBarCloseButton}"
+                <Button Grid.Column="6" Style="{StaticResource TitleBarCloseButton}" Margin="0,0,2,0"
                         Width="38" Height="38" ToolTip="关闭" Click="Close_Click">
                     <Path Data="{StaticResource Icon.X}"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -149,10 +152,16 @@
                 <DataGrid.Columns>
                     <!-- Status dot -->
                     <DataGridTemplateColumn Width="28" CanUserResize="False">
+                        <DataGridTemplateColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="Padding" Value="0" />
+                            </Style>
+                        </DataGridTemplateColumn.CellStyle>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Ellipse Width="8" Height="8" Fill="{Binding StatusDotColor}"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                         HorizontalAlignment="Left" VerticalAlignment="Center"
+                                         Margin="14,0,0,0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
