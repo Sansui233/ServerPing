@@ -1,0 +1,11 @@
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\bin\Debug\net9.0\ServerPing.Shared.deps.json
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\bin\Debug\net9.0\ServerPing.Shared.dll
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\bin\Debug\net9.0\ServerPing.Shared.pdb
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.AssemblyInfoInputs.cache
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.AssemblyInfo.cs
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.csproj.CoreCompileInputs.cache
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.dll
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\refint\ServerPing.Shared.dll
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ServerPing.Shared.pdb
+C:\Users\lingn\Developer\NetFrameWork\ServerPing\ServerPing.Shared\obj\Debug\net9.0\ref\ServerPing.Shared.dll

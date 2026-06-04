@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "t5faevguSag=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\lingn\\Developer\\NetFrameWork\\ServerPing\\ServerPing.GUI\\ServerPing.GUI.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\lingn\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.16\\microsoft.netcore.app.ref.9.0.16.nupkg.sha512",
+    "C:\\Users\\lingn\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.16\\microsoft.windowsdesktop.app.ref.9.0.16.nupkg.sha512",
+    "C:\\Users\\lingn\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.16\\microsoft.aspnetcore.app.ref.9.0.16.nupkg.sha512",
+    "C:\\Users\\lingn\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\9.0.16\\microsoft.netcore.app.host.win-x64.9.0.16.nupkg.sha512"
+  ],
+  "logs": []
+}
