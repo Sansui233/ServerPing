@@ -64,6 +64,7 @@
     <sys:String x:Key="Status.Online">在线</sys:String>
     <sys:String x:Key="Status.Offline">离线</sys:String>
     <sys:String x:Key="Status.Unknown">未知</sys:String>
+    <sys:String x:Key="Status.Tooltip">状态：{0}</sys:String>
     <sys:String x:Key="Server.NewServer">新服务器</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">成功：{0} 失败：{1}</sys:String>
     <sys:String x:Key="Dialog.Error">错误</sys:String>

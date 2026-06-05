@@ -111,7 +111,7 @@ public class ServerViewModel : ViewModelBase
         _ => LocalizationService.Get("Status.Unknown")
     };
 
-    public string StatusTooltipText => $"状态：{StatusText}";
+    public string StatusTooltipText => LocalizationService.Format("Status.Tooltip", StatusText);
 
     public string LastPingTimeText => IsPlaceholderHost ? "—" : LastPingTime?.ToString("HH:mm:ss") ?? "-";
 

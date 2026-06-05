@@ -64,6 +64,7 @@
     <sys:String x:Key="Status.Online">Online</sys:String>
     <sys:String x:Key="Status.Offline">Offline</sys:String>
     <sys:String x:Key="Status.Unknown">Unknown</sys:String>
+    <sys:String x:Key="Status.Tooltip">Status: {0}</sys:String>
     <sys:String x:Key="Server.NewServer">New server</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">Success: {0} Failure: {1}</sys:String>
     <sys:String x:Key="Dialog.Error">Error</sys:String>

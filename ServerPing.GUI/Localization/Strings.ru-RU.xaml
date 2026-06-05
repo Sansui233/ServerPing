@@ -64,6 +64,7 @@
     <sys:String x:Key="Status.Online">Онлайн</sys:String>
     <sys:String x:Key="Status.Offline">Офлайн</sys:String>
     <sys:String x:Key="Status.Unknown">Неизвестно</sys:String>
+    <sys:String x:Key="Status.Tooltip">Статус: {0}</sys:String>
     <sys:String x:Key="Server.NewServer">Новый сервер</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">Успешно: {0} Сбоев: {1}</sys:String>
     <sys:String x:Key="Dialog.Error">Ошибка</sys:String>

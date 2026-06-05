@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -19,6 +19,7 @@ Single-entry dual-process design: the Service is the primary process; it owns th
 
 ```
 ServerPing.sln
+├── .github/workflows/release.yml                   — tag-triggered GitHub Release asset build
 ├── ServerPing.Shared    (Class Library, net9.0)       — shared models and IPC protocol
 ├── ServerPing.Service   (Console App, net9.0-windows)  — background daemon, tray, IPC server
 └── ServerPing.GUI       (WPF App, net9.0-windows)      — management panel (on-demand, exits fully when closed)
@@ -137,6 +138,10 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o pu
 
 # Create only the smallest portable ZIP
 .\publish.ps1 -Mode portable
+
+# Publish GitHub Release assets from CI
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 ### Publish
@@ -151,6 +156,8 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o pu
 .\publish.ps1 -Mode standalone
 .\publish.ps1 -Version v1.0.0  # manual version override
 ```
+
+GitHub Actions 发布流程位于 `.github/workflows/release.yml`。推送 `v*` tag 时，workflow 在 `windows-latest` 上安装 .NET 9 SDK，调用 `.\publish.ps1 -Version <tag> -Mode all` 生成 portable 与 standalone ZIP，并用仓库 `GITHUB_TOKEN` 创建或更新同名 GitHub Release，将 `artifacts/*.zip` 上传为 Release assets。
 
 ## Current Status
 
@@ -176,6 +183,7 @@ All core features complete:
 - **Platform:** Windows-only (Windows notifications, system tray, WPF)
 - **Resource Usage:** Service must stay under 20MB memory when GUI is closed
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
+- **UI Localization:** New or changed user-facing GUI text, tooltips, validation messages, and dialog content must use the existing localization flow (`LocalizationService` or `DynamicResource`) and update all language resource dictionaries under `ServerPing.GUI/Localization/`.
 - **Do Not Build** for validation modifications.
 
-You Must update CLAUDE.md file to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.
+You Must update AGENTS.md file to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.
