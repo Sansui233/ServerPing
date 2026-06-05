@@ -18,7 +18,7 @@ public class NotificationService
     [DllImport("winmm.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool PlaySound(string? pszSound, nint hmod, uint fdwSound);
 
-    public void ShowServerOfflineNotification(Server server, int failureThreshold)
+    public void ShowServerOfflineNotification(Server server, int failureThreshold, bool playSound = true)
     {
         var content = new ToastContentBuilder()
             .AddText("服务器离线")
@@ -28,7 +28,10 @@ public class NotificationService
 
         var toast = new ToastNotification(content.GetXml());
         ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
-        PlayNotificationSound();
+        if (playSound)
+        {
+            PlayNotificationSound();
+        }
     }
 
     public void ShowServerOnlineNotification(Server server)
@@ -61,6 +64,11 @@ public class NotificationService
         if (File.Exists(offlineSoundPath) && PlaySound(offlineSoundPath, 0, SndFileName | SndAsync | SndNoDefault))
             return;
 
+        PlaySystemNotificationSound();
+    }
+
+    public void PlaySystemNotificationSound()
+    {
         if (PlaySound(NotificationSoundAlias, 0, SndAlias | SndAsync | SndNoDefault))
             return;
 

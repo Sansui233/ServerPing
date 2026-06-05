@@ -8,6 +8,7 @@ public class PingService : IDisposable
     private readonly Dictionary<string, System.Threading.Timer> _timers = new();
     private readonly Dictionary<string, Server> _servers = new();
     private readonly Dictionary<string, MinuteRingBuffer> _minuteBuffers = new();
+    private readonly Dictionary<string, DateTime> _lastSuccessfulPingTimes = new();
     private readonly StatsFileManager _statsFileManager;
     private readonly object _lock = new();
     private MonitoringSettings _settings = new();
@@ -15,6 +16,8 @@ public class PingService : IDisposable
 
     public event EventHandler<ServerStatusChangedEventArgs>? StatusChanged;
     public event EventHandler? SettingsChanged;
+    public event EventHandler? ServersChanged;
+    public event EventHandler? PingResultRecorded;
 
     public PingService(StatsFileManager statsFileManager)
     {
@@ -60,6 +63,7 @@ public class PingService : IDisposable
                 StopPinging(id);
                 _servers.Remove(id);
                 _minuteBuffers.Remove(id);
+                _lastSuccessfulPingTimes.Remove(id);
                 _statsFileManager.RemoveServer(id);
             }
 
@@ -81,12 +85,13 @@ public class PingService : IDisposable
                 {
                     _servers[server.Id] = server;
                     _minuteBuffers.TryAdd(server.Id, new MinuteRingBuffer());
-
                     if (server.IsEnabled)
                         StartPinging(server);
                 }
             }
         }
+
+        ServersChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void StartPinging(Server server)
@@ -135,12 +140,14 @@ public class PingService : IDisposable
                     return;
 
                 var previousStatus = server.Status;
-                server.LastPingTime = DateTime.Now;
+                var pingTime = DateTime.Now;
+                server.LastPingTime = pingTime;
 
                 if (reply.Status == IPStatus.Success)
                 {
                     server.Status = ServerStatus.Online;
                     server.ConsecutiveFailures = 0;
+                    _lastSuccessfulPingTimes[serverId] = pingTime;
                     RecordPingResult(serverId, true);
                 }
                 else
@@ -199,6 +206,8 @@ public class PingService : IDisposable
         _statsFileManager.RecordResult(serverId, wasSuccessful);
         if (_minuteBuffers.TryGetValue(serverId, out var buffer))
             buffer.Record(wasSuccessful);
+
+        PingResultRecorded?.Invoke(this, EventArgs.Empty);
     }
 
     public List<Server> GetServers()
@@ -275,6 +284,15 @@ public class PingService : IDisposable
     public double? GetLastHourAvailability(string serverId)
     {
         return _statsFileManager.GetLastHourStats(serverId).AvailabilityPercent;
+    }
+
+    public bool WasAvailableInLastMinute(string serverId)
+    {
+        lock (_lock)
+        {
+            return _lastSuccessfulPingTimes.TryGetValue(serverId, out var lastSuccessfulPingTime)
+                && DateTime.Now - lastSuccessfulPingTime <= TimeSpan.FromMinutes(1);
+        }
     }
 
     public void Dispose()

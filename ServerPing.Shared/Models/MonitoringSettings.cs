@@ -9,7 +9,7 @@ public class MonitoringSettings
     public const int MinGuiHibernateDuration = 5;
     public const int MaxGuiHibernateDuration = 120;
 
-    private int _pingIntervalSeconds = 5;
+    private int _pingIntervalSeconds = 3;
     private int _failureThreshold = 3;
     private int _guiHibernateDurationSeconds = 10;
     private string _language = "system";
@@ -30,6 +30,8 @@ public class MonitoringSettings
 
     public bool LaunchAtStartup { get; set; }
 
+    public bool OfflineNotificationSoundEnabled { get; set; } = true;
+
     public string Language
     {
         get => _language;
@@ -48,6 +50,7 @@ public class MonitoringSettings
         FailureThreshold = FailureThreshold,
         SilentStartup = SilentStartup,
         LaunchAtStartup = LaunchAtStartup,
+        OfflineNotificationSoundEnabled = OfflineNotificationSoundEnabled,
         Language = Language,
         GuiHibernateDurationSeconds = GuiHibernateDurationSeconds
     };

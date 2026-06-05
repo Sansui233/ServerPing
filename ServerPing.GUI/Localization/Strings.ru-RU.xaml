@@ -5,6 +5,7 @@
     <sys:String x:Key="Settings.Monitoring">Мониторинг</sys:String>
     <sys:String x:Key="Settings.PingInterval">Интервал ping (сек.)</sys:String>
     <sys:String x:Key="Settings.FailureThreshold">Число сбоев</sys:String>
+    <sys:String x:Key="Settings.OfflineNotificationSound">Звук уведомления об офлайне</sys:String>
     <sys:String x:Key="Settings.Appearance">Внешний вид</sys:String>
     <sys:String x:Key="Settings.Language">Язык</sys:String>
     <sys:String x:Key="Settings.HibernateDuration">Сон UI в фоне (сек.)</sys:String>

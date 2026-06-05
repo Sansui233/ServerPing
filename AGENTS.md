@@ -42,9 +42,9 @@ ServerPing.sln
 | File | Purpose |
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
-| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. 24h rolling history for stats. Exposes `Pause()`/`Resume()`. |
-| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications also play the Windows notification sound alias with a system-sound fallback. |
-| `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Pause/Resume toggle fires `MonitoringToggleRequested` event. |
+| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Rolling stats and change events. Exposes `Pause()`/`Resume()`. Tray-related state details are documented in `DOCS/tray-state-machine.md`. |
+| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications play bundled `offline.wav` with fallback. |
+| `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Alert icon behavior is summarized in Key Design Decisions and detailed in `DOCS/tray-state-machine.md`. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
 | `GuiProcessManager.cs` | Finds / launches `ServerPing.GUI.exe`. `CloseGuiIfRunning()` tries graceful close then kills. |
 
@@ -106,6 +106,7 @@ Windows Terminal settings location:
 - **Single Named Pipe (one connection at a time):** Sufficient since only one GUI instance can run (Mutex-guarded). Avoids complexity of concurrent IPC.
 - **3-second GUI refresh:** `DispatcherTimer` on UI thread polls `GetServers` + `GetStats`. No push notifications from Service to GUI — acceptable latency.
 - **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
+- **Tray alert and recovery state:** Normal -> red is driven by the user-configured consecutive failure threshold; red -> normal requires every enabled server to be available within the last 1 minute. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
 
 ## Development Commands
@@ -149,8 +150,9 @@ All core features complete:
 - ✅ Project structure and shared models
 - ✅ Ping engine (configurable interval, configurable failure threshold)
 - ✅ Windows Toast notifications (offline / recovery / test)
-- ✅ Windows default notification sound for offline alerts + GUI sound test
+- ✅ Bundled offline alert sound with Windows/system fallback + GUI sound test
 - ✅ System tray icon with live server status and availability %
+- ✅ Tray alert icon and full-recovery system notification sound (see `DOCS/tray-state-machine.md`)
 - ✅ Tray Pause/Resume monitoring toggle
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)

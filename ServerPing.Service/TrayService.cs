@@ -219,10 +219,10 @@ public class TrayService : IDisposable
         _isAlertIconActive = hasOfflineServers;
     }
 
-    public void UpdateStatus(int onlineCount, int totalCount)
+    public void UpdateStatus(int onlineCount, int totalCount, bool isAlertActive)
     {
         var servers = _getServers();
-        ApplyTrayIcon(servers.Any(server => server.Status == ServerStatus.Offline));
+        ApplyTrayIcon(isAlertActive);
 
         var availability = AverageAvailability(servers
             .Select(server => _getLastHourAvailability(server.Id)));

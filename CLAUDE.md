@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 ServerPing is a lightweight Windows server monitoring tool that:
-- Pings servers at a configurable interval (default 5s, range 1-300s)
+- Pings servers at a configurable interval (default 3s, range 1-300s)
 - Sends Windows Toast notifications after a configurable number of consecutive failures (default 3, range 1-20)
 - Provides a WPF GUI for managing the server list and monitoring settings
 - Imports SSH profiles from Windows Terminal configuration
@@ -31,7 +31,7 @@ ServerPing.sln
 | `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures |
 | `Models/ServerStatus.cs` | Enum: Unknown, Online, Offline |
 | `Models/ServerConfiguration.cs` | Config root: `List<Server>` + `MonitoringSettings` |
-| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (1-300), FailureThreshold (1-20), SilentStartup. Exposes `Clone()`. |
+| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (default 3, range 1-300), FailureThreshold (default 3, range 1-20), SilentStartup, offline notification sound. Exposes `Clone()`. |
 | `Models/ServerStats.cs` | Stats snapshot: `ServerStats { ServerId, LastHour, LastDay }`, each window is `PingStatsWindow { SuccessCount, FailureCount, AvailabilityPercent }` |
 | `ConfigurationManager.cs` | Read/write `%APPDATA%\ServerPing\servers.json`. Returns empty config on failure. |
 | `IPC/MessageType.cs` | IPC command enum (see IPC section below) |
@@ -42,9 +42,9 @@ ServerPing.sln
 | File | Purpose |
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
-| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. 24h rolling history for stats. Exposes `Pause()`/`Resume()`. |
-| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications also play bundled `offline.wav`, then fall back to the Windows notification sound alias and system sound. |
-| `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Switches to `app-alert.ico` while any server is offline and back to `app.ico` after recovery. Pause/Resume toggle fires `MonitoringToggleRequested` event. |
+| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Rolling stats and change events. Exposes `Pause()`/`Resume()`. Tray-related state details are documented in `DOCS/tray-state-machine.md`. |
+| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications play bundled `offline.wav` with fallback. |
+| `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Alert icon behavior is summarized in Key Design Decisions and detailed in `DOCS/tray-state-machine.md`. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
 | `GuiProcessManager.cs` | Finds / launches `ServerPing.GUI.exe`. `CloseGuiIfRunning()` tries graceful close then kills. |
 
@@ -54,7 +54,7 @@ ServerPing.sln
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
-| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
+| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
 | `Styles/ScrollBar.xaml` | Theme-aware global ScrollBar control template merged by `App.xaml`. |
@@ -106,7 +106,7 @@ Windows Terminal settings location:
 - **Single Named Pipe (one connection at a time):** Sufficient since only one GUI instance can run (Mutex-guarded). Avoids complexity of concurrent IPC.
 - **3-second GUI refresh:** `DispatcherTimer` on UI thread polls `GetServers` + `GetStats`. No push notifications from Service to GUI — acceptable latency.
 - **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
-- **Tray alert icon:** `TrayService.UpdateStatus` derives alert state from the current server snapshot. Any `Offline` server switches the tray icon to `app-alert.ico`; when none remain offline, it restores `app.ico`.
+- **Tray alert and recovery state:** Normal -> red is driven by the user-configured consecutive failure threshold; red -> normal requires every enabled server to be available within the last 1 minute. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
 
 ## Development Commands
@@ -152,7 +152,7 @@ All core features complete:
 - ✅ Windows Toast notifications (offline / recovery / test)
 - ✅ Bundled offline alert sound with Windows/system fallback + GUI sound test
 - ✅ System tray icon with live server status and availability %
-- ✅ Tray alert icon while any server is offline
+- ✅ Tray alert icon with synchronized red-transition sound (see `DOCS/tray-state-machine.md`)
 - ✅ Tray Pause/Resume monitoring toggle
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)

@@ -19,6 +19,7 @@ public partial class SettingsDialog : Window
         _viewModel = viewModel;
         PingIntervalTextBox.Text = settings.PingIntervalSeconds.ToString();
         FailureThresholdTextBox.Text = settings.FailureThreshold.ToString();
+        OfflineNotificationSoundCheckBox.IsChecked = settings.OfflineNotificationSoundEnabled;
         SilentStartupCheckBox.IsChecked = settings.SilentStartup;
         LaunchAtStartupCheckBox.IsChecked = settings.LaunchAtStartup;
         HibernateDurationTextBox.Text = settings.GuiHibernateDurationSeconds.ToString();
@@ -127,6 +128,7 @@ public partial class SettingsDialog : Window
 
         settings.PingIntervalSeconds = interval;
         settings.FailureThreshold = threshold;
+        settings.OfflineNotificationSoundEnabled = OfflineNotificationSoundCheckBox.IsChecked == true;
         settings.SilentStartup = SilentStartupCheckBox.IsChecked == true;
         settings.LaunchAtStartup = LaunchAtStartupCheckBox.IsChecked == true;
         settings.GuiHibernateDurationSeconds = hibernate;

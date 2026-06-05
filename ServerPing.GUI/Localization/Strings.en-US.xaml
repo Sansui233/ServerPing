@@ -5,6 +5,7 @@
     <sys:String x:Key="Settings.Monitoring">Monitoring</sys:String>
     <sys:String x:Key="Settings.PingInterval">Ping interval (seconds)</sys:String>
     <sys:String x:Key="Settings.FailureThreshold">Failure count</sys:String>
+    <sys:String x:Key="Settings.OfflineNotificationSound">Offline notification sound</sys:String>
     <sys:String x:Key="Settings.Appearance">Appearance</sys:String>
     <sys:String x:Key="Settings.Language">Language</sys:String>
     <sys:String x:Key="Settings.HibernateDuration">UI hibernation while in background (seconds)</sys:String>
