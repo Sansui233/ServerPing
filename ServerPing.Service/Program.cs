@@ -30,7 +30,11 @@ pingService.StatusChanged += (sender, e) =>
     if (e.PreviousStatus != ServerStatus.Offline && e.Server.Status == ServerStatus.Offline)
     {
         Console.WriteLine($"[离线] {e.Server.Name} ({e.Server.Host})");
-        notificationService.ShowServerOfflineNotification(e.Server, pingService.GetSettings().FailureThreshold, playSound: false);
+        var settings = pingService.GetSettings();
+        if (settings.OfflineNotificationEnabled)
+        {
+            notificationService.ShowServerOfflineNotification(e.Server, settings.FailureThreshold, playSound: false);
+        }
     }
     else if (e.PreviousStatus == ServerStatus.Offline && e.Server.Status == ServerStatus.Online)
     {

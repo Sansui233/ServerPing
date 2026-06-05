@@ -27,6 +27,7 @@ public class TrayService : IDisposable
     private Icon? _alertIcon;
     private bool _isAlertIconActive;
     private bool _isMonitoringPaused;
+    private bool _disposed;
 
     public event EventHandler? OpenGuiRequested;
     public event EventHandler<(int X, int Y)>? ToggleGuiRequested;
@@ -117,6 +118,11 @@ public class TrayService : IDisposable
 
     private void ShowContextMenu()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _menuOwner.Location = Cursor.Position;
         _menuOwner.Show();
         SetForegroundWindow(_menuOwner.Handle);
@@ -137,6 +143,11 @@ public class TrayService : IDisposable
 
     private void RefreshStatusItems()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         ApplyLanguage();
 
         foreach (var item in _statusItems)
@@ -170,30 +181,46 @@ public class TrayService : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
         if (disposing)
         {
+            _trayIcon.MouseClick -= TrayIcon_MouseClick;
+            _trayIcon.Visible = false;
+            _trayIcon.Icon = null;
+            _trayIcon.Dispose();
+
             foreach (var item in _statusItems)
             {
                 item.Dispose();
             }
+
+            _statusItems.Clear();
 
             if (_alertIcon is not null && !ReferenceEquals(_alertIcon, _defaultIcon))
             {
                 _alertIcon.Dispose();
             }
 
-            if (!ReferenceEquals(_defaultIcon, SystemIcons.Application))
-            {
-                _defaultIcon?.Dispose();
-            }
+            _defaultIcon?.Dispose();
+
+            _contextMenu.Dispose();
+            _menuOwner.Dispose();
         }
     }
 
     private void LoadIcons()
     {
-        _defaultIcon = LoadIcon(DefaultIconFileName) ?? SystemIcons.Application;
+        _defaultIcon = LoadIcon(DefaultIconFileName) ?? CreateFallbackIcon();
         _alertIcon = LoadIcon(AlertIconFileName) ?? _defaultIcon;
     }
+
+    private static Icon CreateFallbackIcon() => (Icon)SystemIcons.Application.Clone();
 
     private static Icon? LoadIcon(string fileName)
     {
@@ -210,6 +237,11 @@ public class TrayService : IDisposable
 
     private void ApplyTrayIcon(bool hasOfflineServers)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         if (_isAlertIconActive == hasOfflineServers && _trayIcon.Icon is not null)
         {
             return;
@@ -221,6 +253,11 @@ public class TrayService : IDisposable
 
     public void UpdateStatus(int onlineCount, int totalCount, bool isAlertActive)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         var servers = _getServers();
         ApplyTrayIcon(isAlertActive);
 
@@ -237,10 +274,7 @@ public class TrayService : IDisposable
     public void Dispose()
     {
         Dispose(true);
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-        _contextMenu.Dispose();
-        _menuOwner.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private string CurrentLanguage() => _getSettings().Language;

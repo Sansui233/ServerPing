@@ -30,6 +30,8 @@ public class MonitoringSettings
 
     public bool LaunchAtStartup { get; set; }
 
+    public bool OfflineNotificationEnabled { get; set; } = true;
+
     public bool OfflineNotificationSoundEnabled { get; set; } = true;
 
     public string Language
@@ -50,6 +52,7 @@ public class MonitoringSettings
         FailureThreshold = FailureThreshold,
         SilentStartup = SilentStartup,
         LaunchAtStartup = LaunchAtStartup,
+        OfflineNotificationEnabled = OfflineNotificationEnabled,
         OfflineNotificationSoundEnabled = OfflineNotificationSoundEnabled,
         Language = Language,
         GuiHibernateDurationSeconds = GuiHibernateDurationSeconds

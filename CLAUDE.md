@@ -31,7 +31,7 @@ ServerPing.sln
 | `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures |
 | `Models/ServerStatus.cs` | Enum: Unknown, Online, Offline |
 | `Models/ServerConfiguration.cs` | Config root: `List<Server>` + `MonitoringSettings` |
-| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (default 3, range 1-300), FailureThreshold (default 3, range 1-20), SilentStartup, offline notification sound. Exposes `Clone()`. |
+| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (default 3, range 1-300), FailureThreshold (default 3, range 1-20), SilentStartup, offline notification, offline notification sound. Exposes `Clone()`. |
 | `Models/ServerStats.cs` | Stats snapshot: `ServerStats { ServerId, LastHour, LastDay }`, each window is `PingStatsWindow { SuccessCount, FailureCount, AvailabilityPercent }` |
 | `ConfigurationManager.cs` | Read/write `%APPDATA%\ServerPing\servers.json`. Returns empty config on failure. |
 | `IPC/MessageType.cs` | IPC command enum (see IPC section below) |
@@ -43,10 +43,11 @@ ServerPing.sln
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
 | `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Rolling stats and change events. Exposes `Pause()`/`Resume()`. Tray-related state details are documented in `DOCS/tray-state-machine.md`. |
-| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline notifications play bundled `offline.wav` with fallback. |
+| `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications` + `Windows.UI.Notifications`. Three notification types: offline, online, test. Offline notifications use app-controlled `winmm.dll` playback for bundled `offline.wav` with fallback. See `docs/windows-notifications.md`. |
 | `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Alert icon behavior is summarized in Key Design Decisions and detailed in `DOCS/tray-state-machine.md`. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
 | `GuiProcessManager.cs` | Finds / launches `ServerPing.GUI.exe`. `CloseGuiIfRunning()` tries graceful close then kills. |
+| `docs/windows-notifications.md` | Research and implementation notes for WPF-triggered Windows Toast notifications, custom sound handling, and build/install requirements. |
 
 ### ServerPing.GUI (on-demand, fully exits when closed)
 
@@ -54,7 +55,7 @@ ServerPing.sln
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
-| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
+| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup, offline notification, and offline notification sound settings. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
 | `Styles/ScrollBar.xaml` | Theme-aware global ScrollBar control template merged by `App.xaml`. |
@@ -108,6 +109,8 @@ Windows Terminal settings location:
 - **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
 - **Tray alert and recovery state:** Normal -> red is driven by the user-configured consecutive failure threshold; red -> normal requires every enabled server to be available within the last 1 minute. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
+- **Notifications owned by Service:** The WPF GUI does not send Windows notifications directly. GUI test buttons call the Service over IPC; the Service owns Toast sending and custom sound playback. Offline Toasts are controlled by `MonitoringSettings.OfflineNotificationEnabled`.
+- **Custom notification sound:** ServerPing does not rely on Toast XML custom audio. It sends the Toast and separately plays `offline.wav` through `winmm.dll`, with Windows/system fallbacks.
 
 ## Development Commands
 
@@ -142,6 +145,7 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o pu
 ### Publish
 
 两个项目必须 publish 到同一目录（`-o`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
+`offline.wav` 也必须随 Service 输出目录发布；`ServerPing.Service.csproj` 会从 GUI assets 链接并复制该文件。
 
 正式 GitHub Release assets 使用根目录 `publish.ps1` 生成，输出到 `artifacts/`：
 
@@ -152,12 +156,16 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o pu
 .\publish.ps1 -Version v1.0.0  # manual version override
 ```
 
+两个方案的入口均为 `ServerPing.exe`，GUI 由 Service 按需启动。
+当前通知实现使用 `Microsoft.Toolkit.Uwp.Notifications`，不要求安装 Windows App SDK Runtime。
+
 ## Current Status
 
 All core features complete:
 - ✅ Project structure and shared models
 - ✅ Ping engine (configurable interval, configurable failure threshold)
 - ✅ Windows Toast notifications (offline / recovery / test)
+- ✅ Settings toggle for offline Toast notifications
 - ✅ Bundled offline alert sound with Windows/system fallback + GUI sound test
 - ✅ System tray icon with live server status and availability %
 - ✅ Tray alert icon with synchronized red-transition sound (see `DOCS/tray-state-machine.md`)

@@ -201,8 +201,7 @@ public class IpcServer : IDisposable
                     break;
 
                 case MessageType.TestNotification:
-                    _notificationService.ShowTestNotification();
-                    return new IpcResponse { Success = true };
+                    return new IpcResponse { Success = _notificationService.ShowTestNotification() };
 
                 case MessageType.TestNotificationSound:
                     _notificationService.PlayNotificationSound();

@@ -5,6 +5,7 @@
     <sys:String x:Key="Settings.Monitoring">监控</sys:String>
     <sys:String x:Key="Settings.PingInterval">Ping 间隔（秒）</sys:String>
     <sys:String x:Key="Settings.FailureThreshold">失败次数</sys:String>
+    <sys:String x:Key="Settings.OfflineNotification">离线通知</sys:String>
     <sys:String x:Key="Settings.OfflineNotificationSound">离线通知音效</sys:String>
     <sys:String x:Key="Settings.Appearance">外观</sys:String>
     <sys:String x:Key="Settings.Language">语言</sys:String>

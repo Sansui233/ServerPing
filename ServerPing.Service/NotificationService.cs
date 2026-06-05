@@ -26,8 +26,7 @@ public class NotificationService
             .AddText($"连续 {failureThreshold} 次 Ping 失败，最后检查时间：{server.LastPingTime:HH:mm:ss}")
             .GetToastContent();
 
-        var toast = new ToastNotification(content.GetXml());
-        ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+        ShowToast(content);
         if (playSound)
         {
             PlayNotificationSound();
@@ -42,11 +41,10 @@ public class NotificationService
             .AddText($"服务器已恢复连接")
             .GetToastContent();
 
-        var toast = new ToastNotification(content.GetXml());
-        ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+        ShowToast(content);
     }
 
-    public void ShowTestNotification()
+    public bool ShowTestNotification()
     {
         var content = new ToastContentBuilder()
             .AddText("ServerPing 测试通知")
@@ -54,8 +52,22 @@ public class NotificationService
             .AddText($"发送时间：{DateTime.Now:HH:mm:ss}")
             .GetToastContent();
 
+        return ShowToast(content);
+    }
+
+    private static bool ShowToast(ToastContent content)
+    {
         var toast = new ToastNotification(content.GetXml());
-        ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+        try
+        {
+            ToastNotificationManager.CreateToastNotifier("ServerPing").Show(toast);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"发送 Windows Toast 通知失败: {ex.Message}");
+            return false;
+        }
     }
 
     public void PlayNotificationSound()
