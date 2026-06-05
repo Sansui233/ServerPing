@@ -9,8 +9,10 @@ namespace ServerPing.Service;
 public class NotificationService
 {
     private const uint SndAsync = 0x0001;
+    private const uint SndFileName = 0x00020000;
     private const uint SndAlias = 0x00010000;
     private const uint SndNoDefault = 0x0002;
+    private const string OfflineSoundFileName = "offline.wav";
     private const string NotificationSoundAlias = "SystemNotification";
 
     [DllImport("winmm.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -55,6 +57,10 @@ public class NotificationService
 
     public void PlayNotificationSound()
     {
+        var offlineSoundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, OfflineSoundFileName);
+        if (File.Exists(offlineSoundPath) && PlaySound(offlineSoundPath, 0, SndFileName | SndAsync | SndNoDefault))
+            return;
+
         if (PlaySound(NotificationSoundAlias, 0, SndAlias | SndAsync | SndNoDefault))
             return;
 

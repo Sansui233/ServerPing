@@ -15,7 +15,7 @@
     <sys:String x:Key="Settings.TestNotification">Тест уведомления</sys:String>
     <sys:String x:Key="Settings.TestNotificationDescription">Отправить тестовое уведомление Windows Toast</sys:String>
     <sys:String x:Key="Settings.TestNotificationSound">Тест звука уведомления</sys:String>
-    <sys:String x:Key="Settings.TestNotificationSoundDescription">Воспроизвести стандартный звук уведомления Windows</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSoundDescription">Воспроизвести звук предупреждения об офлайне</sys:String>
     <sys:String x:Key="Settings.Test">Тест</sys:String>
     <sys:String x:Key="Settings.Cancel">Отмена</sys:String>
     <sys:String x:Key="Settings.Save">Сохранить</sys:String>

@@ -15,7 +15,7 @@
     <sys:String x:Key="Settings.TestNotification">Test notification</sys:String>
     <sys:String x:Key="Settings.TestNotificationDescription">Send a Windows Toast test message</sys:String>
     <sys:String x:Key="Settings.TestNotificationSound">Test notification sound</sys:String>
-    <sys:String x:Key="Settings.TestNotificationSoundDescription">Play the default Windows notification sound</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSoundDescription">Play the offline alert sound</sys:String>
     <sys:String x:Key="Settings.Test">Test</sys:String>
     <sys:String x:Key="Settings.Cancel">Cancel</sys:String>
     <sys:String x:Key="Settings.Save">Save</sys:String>

@@ -15,7 +15,7 @@
     <sys:String x:Key="Settings.TestNotification">测试通知</sys:String>
     <sys:String x:Key="Settings.TestNotificationDescription">发送一条 Windows Toast 测试消息</sys:String>
     <sys:String x:Key="Settings.TestNotificationSound">测试通知音效</sys:String>
-    <sys:String x:Key="Settings.TestNotificationSoundDescription">播放 Windows 默认通知音效</sys:String>
+    <sys:String x:Key="Settings.TestNotificationSoundDescription">播放离线告警音效</sys:String>
     <sys:String x:Key="Settings.Test">测试</sys:String>
     <sys:String x:Key="Settings.Cancel">取消</sys:String>
     <sys:String x:Key="Settings.Save">保存</sys:String>
