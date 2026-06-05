@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 ServerPing is a lightweight Windows server monitoring tool that:
-- Pings servers at a configurable interval (default 5s, range 1-300s)
+- Pings servers at a configurable interval (default 3s, range 1-300s)
 - Sends Windows Toast notifications after a configurable number of consecutive failures (default 3, range 1-20)
 - Provides a WPF GUI for managing the server list and monitoring settings
 - Imports SSH profiles from Windows Terminal configuration
@@ -31,7 +31,7 @@ ServerPing.sln
 | `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures |
 | `Models/ServerStatus.cs` | Enum: Unknown, Online, Offline |
 | `Models/ServerConfiguration.cs` | Config root: `List<Server>` + `MonitoringSettings` |
-| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (1-300), FailureThreshold (1-20), SilentStartup. Exposes `Clone()`. |
+| `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (default 3, range 1-300), FailureThreshold (default 3, range 1-20), SilentStartup, offline notification sound. Exposes `Clone()`. |
 | `Models/ServerStats.cs` | Stats snapshot: `ServerStats { ServerId, LastHour, LastDay }`, each window is `PingStatsWindow { SuccessCount, FailureCount, AvailabilityPercent }` |
 | `ConfigurationManager.cs` | Read/write `%APPDATA%\ServerPing\servers.json`. Returns empty config on failure. |
 | `IPC/MessageType.cs` | IPC command enum (see IPC section below) |
@@ -54,7 +54,7 @@ ServerPing.sln
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
-| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
+| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
 | `Styles/ScrollBar.xaml` | Theme-aware global ScrollBar control template merged by `App.xaml`. |
@@ -131,16 +131,35 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --self-contained -o publi
 # Publish — portable (framework-dependent, requires .NET 9 runtime)
 dotnet publish ServerPing.Service -c Release -r win-x64 --no-self-contained -o publish/portable
 dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o publish/portable
+
+# Create GitHub Release assets (portable + standalone ZIPs; version comes from current git tag)
+.\publish.ps1
+
+# Create only the smallest portable ZIP
+.\publish.ps1 -Mode portable
 ```
 
 ### Publish
 
 两个项目必须 publish 到同一目录（`-o`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
 
+正式 GitHub Release assets 使用根目录 `publish.ps1` 生成，输出到 `artifacts/`：
+
+```powershell
+.\publish.ps1                  # portable + standalone, version from current git tag
+.\publish.ps1 -Mode portable
+.\publish.ps1 -Mode standalone
+.\publish.ps1 -Version v1.0.0  # manual version override
+```
+
+脚本默认从当前 commit 的 git tag 读取版本号并写入 zip 文件名；如果当前 commit 没有 tag，需要先创建 release tag 或传入 `-Version vX.Y.Z`。ZIP 内部包含一个顶层 `ServerPing/` 文件夹，避免用户解压后文件散落。
+
+脚本发布顺序为 Service -> GUI，并保持两个项目输出到同一目录。为控制体积，脚本关闭 debug symbols 和 ReadyToRun，不启用 trimming 或 single-file；WPF 不适合 trimming，且当前 Service 会从发布目录按文件路径读取 `app.ico`、`app-alert.ico`、`offline.wav` 并启动 `ServerPing.GUI.exe`。
+
 | 方案 | 输出目录 | 体积 | 运行要求 |
 |------|----------|------|----------|
-| Self-contained (standalone) | `publish/` | ~150 MB | 无，包含 .NET 运行时 |
-| Portable (framework-dependent) | `publish/` | ~2 MB | 目标机器已安装 .NET 9 |
+| Self-contained (standalone) | `artifacts/ServerPing-<version>-win-x64-dotnet/` + `.zip` | larger | 无，包含 .NET 运行时 |
+| Portable (framework-dependent) | `artifacts/ServerPing-<version>-win-x64-no-dotnet/` + `.zip` | smallest | 目标机器已安装 .NET 9 Desktop Runtime |
 
 两个方案的入口均为 `ServerPing.exe`，GUI 由 Service 按需启动。
 
@@ -152,7 +171,7 @@ All core features complete:
 - ✅ Windows Toast notifications (offline / recovery / test)
 - ✅ Bundled offline alert sound with Windows/system fallback + GUI sound test
 - ✅ System tray icon with live server status and availability %
-- ✅ Tray alert icon and full-recovery system notification sound (see `DOCS/tray-state-machine.md`)
+- ✅ Tray alert icon with synchronized red-transition sound (see `DOCS/tray-state-machine.md`)
 - ✅ Tray Pause/Resume monitoring toggle
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)

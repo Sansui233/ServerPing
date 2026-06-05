@@ -131,16 +131,35 @@ dotnet publish ServerPing.GUI    -c Release -r win-x64 --self-contained -o publi
 # Publish — portable (framework-dependent, requires .NET 9 runtime)
 dotnet publish ServerPing.Service -c Release -r win-x64 --no-self-contained -o publish/portable
 dotnet publish ServerPing.GUI    -c Release -r win-x64 --no-self-contained -o publish/portable
+
+# Create GitHub Release assets (portable + standalone ZIPs; version comes from current git tag)
+.\publish.ps1
+
+# Create only the smallest portable ZIP
+.\publish.ps1 -Mode portable
 ```
 
 ### Publish
 
 两个项目必须 publish 到同一目录（`-o`），因为 `GuiProcessManager` 在 Service 所在目录查找 `ServerPing.GUI.exe`。
 
+正式 GitHub Release assets 使用根目录 `publish.ps1` 生成，输出到 `artifacts/`：
+
+```powershell
+.\publish.ps1                  # portable + standalone, version from current git tag
+.\publish.ps1 -Mode portable
+.\publish.ps1 -Mode standalone
+.\publish.ps1 -Version v1.0.0  # manual version override
+```
+
+脚本默认从当前 commit 的 git tag 读取版本号并写入 zip 文件名；如果当前 commit 没有 tag，需要先创建 release tag 或传入 `-Version vX.Y.Z`。ZIP 内部包含一个顶层 `ServerPing/` 文件夹，避免用户解压后文件散落。
+
+脚本发布顺序为 Service -> GUI，并保持两个项目输出到同一目录。为控制体积，脚本关闭 debug symbols 和 ReadyToRun，不启用 trimming 或 single-file；WPF 不适合 trimming，且当前 Service 会从发布目录按文件路径读取 `app.ico`、`app-alert.ico`、`offline.wav` 并启动 `ServerPing.GUI.exe`。
+
 | 方案 | 输出目录 | 体积 | 运行要求 |
 |------|----------|------|----------|
-| Self-contained (standalone) | `publish/` | ~150 MB | 无，包含 .NET 运行时 |
-| Portable (framework-dependent) | `publish/` | ~2 MB | 目标机器已安装 .NET 9 |
+| Self-contained (standalone) | `artifacts/ServerPing-<version>-win-x64-dotnet/` + `.zip` | larger | 无，包含 .NET 运行时 |
+| Portable (framework-dependent) | `artifacts/ServerPing-<version>-win-x64-no-dotnet/` + `.zip` | smallest | 目标机器已安装 .NET 9 Desktop Runtime |
 
 两个方案的入口均为 `ServerPing.exe`，GUI 由 Service 按需启动。
 
