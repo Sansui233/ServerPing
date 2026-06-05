@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using ServerPing.Shared.Models;
 
@@ -199,9 +200,9 @@ public class PingService : IDisposable
         }
     }
 
-    private bool TryBeginPing(string serverId, out Server server)
+    private bool TryBeginPing(string serverId, [NotNullWhen(true)] out Server? server)
     {
-        server = null!;
+        server = null;
 
         lock (_lock)
         {

@@ -167,7 +167,9 @@
                             <DataTemplate>
                                 <Ellipse Width="8" Height="8" Fill="{Binding StatusDotColor}"
                                          HorizontalAlignment="Left" VerticalAlignment="Center"
-                                         Margin="14,0,0,0" />
+                                         Margin="14,0,0,0"
+                                         ToolTip="{Binding StatusTooltipText}"
+                                         ToolTipService.InitialShowDelay="0" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

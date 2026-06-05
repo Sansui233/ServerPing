@@ -44,7 +44,9 @@ public class ServerViewModel : ViewModelBase
             if (!SetProperty(ref _host, value)) return;
             OnPropertyChanged(nameof(IsPlaceholderHost));
             OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(StatusTooltipText));
             OnPropertyChanged(nameof(LastPingTimeText));
+            OnPropertyChanged(nameof(StatusDotColor));
             NotifyStatsChanged();
         }
     }
@@ -57,13 +59,21 @@ public class ServerViewModel : ViewModelBase
             if (!SetProperty(ref _isEnabled, value)) return;
             OnPropertyChanged(nameof(EnableIconColor));
             OnPropertyChanged(nameof(StatusDotColor));
+            OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(StatusTooltipText));
         }
     }
 
     public ServerStatus Status
     {
         get => _status;
-        set { if (SetProperty(ref _status, value)) OnPropertyChanged(nameof(StatusText)); }
+        set
+        {
+            if (!SetProperty(ref _status, value)) return;
+            OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(StatusTooltipText));
+            OnPropertyChanged(nameof(StatusDotColor));
+        }
     }
 
     public DateTime? LastPingTime
@@ -94,18 +104,20 @@ public class ServerViewModel : ViewModelBase
 
     public bool IsPlaceholderHost => Host is "0.0.0.0" or "127.0.0.1" or "localhost";
 
-    public string StatusText => IsPlaceholderHost ? "—" : Status switch
+    public string StatusText => !IsEnabled || IsPlaceholderHost ? LocalizationService.Get("Status.Unknown") : Status switch
     {
         ServerStatus.Online => LocalizationService.Get("Status.Online"),
         ServerStatus.Offline => LocalizationService.Get("Status.Offline"),
         _ => LocalizationService.Get("Status.Unknown")
     };
 
+    public string StatusTooltipText => $"状态：{StatusText}";
+
     public string LastPingTimeText => IsPlaceholderHost ? "—" : LastPingTime?.ToString("HH:mm:ss") ?? "-";
 
     public string LastHourAvailabilityText => IsPlaceholderHost ? "—" : FormatAvailability(LastHourStats.AvailabilityPercent);
 
-    public Brush StatusDotColor => ComputeAvailabilityBrush(LastHourStats);
+    public Brush StatusDotColor => ComputeStatusBrush();
 
     public Brush AvailabilityColor => ComputeAvailabilityBrush(LastHourStats);
 
@@ -121,6 +133,18 @@ public class ServerViewModel : ViewModelBase
             >= 90 => GreenBrush,
             >= 80 => YellowBrush,
             _ => RedBrush
+        };
+    }
+
+    private Brush ComputeStatusBrush()
+    {
+        if (!IsEnabled || IsPlaceholderHost) return GrayBrush;
+
+        return Status switch
+        {
+            ServerStatus.Online => GreenBrush,
+            ServerStatus.Offline => RedBrush,
+            _ => GrayBrush
         };
     }
 
@@ -144,7 +168,6 @@ public class ServerViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(LastHourAvailabilityText));
         OnPropertyChanged(nameof(AvailabilityColor));
-        OnPropertyChanged(nameof(StatusDotColor));
     }
 
     public static ServerViewModel FromModel(Server server) => new()
@@ -200,6 +223,7 @@ public class ServerViewModel : ViewModelBase
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(StatusTooltipText));
         OnPropertyChanged(nameof(IsEnabled));
     }
 }
