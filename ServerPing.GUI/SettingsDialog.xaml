@@ -27,7 +27,8 @@
                     Background="{DynamicResource TitleBarBrush}"
                     BorderBrush="{DynamicResource BorderBrushDark}"
                     BorderThickness="0,0,0,1">
-            <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Background="Transparent"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

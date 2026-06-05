@@ -18,6 +18,7 @@ public partial class ImportDialog : Window
         _profiles = [.. profiles.Select(p => new SshProfileViewModel(p) { IsSelected = true })];
 
         ProfileGrid.ItemsSource = _profiles;
+        RefreshColumnHeaders();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -50,5 +51,12 @@ public partial class ImportDialog : Window
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+    }
+
+    private void RefreshColumnHeaders()
+    {
+        NameColumn.Header = LocalizationService.Get("Import.Name");
+        HostColumn.Header = LocalizationService.Get("Import.Host");
+        CommandColumn.Header = LocalizationService.Get("Import.Command");
     }
 }

@@ -26,7 +26,8 @@
                     Background="{DynamicResource TitleBarBrush}"
                     BorderBrush="{DynamicResource BorderBrushDark}"
                     BorderThickness="0,0,0,1">
-            <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Background="Transparent"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -63,9 +64,9 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="{DynamicResource Import.Name}"    Binding="{Binding Name}"        Width="Auto" MinWidth="100" IsReadOnly="True" />
-                    <DataGridTextColumn Header="{DynamicResource Import.Host}"    Binding="{Binding Host}"        Width="Auto" MinWidth="130" IsReadOnly="True" />
-                    <DataGridTextColumn Header="{DynamicResource Import.Command}" Binding="{Binding CommandLine}" Width="*"    IsReadOnly="True" />
+                    <DataGridTextColumn x:Name="NameColumn" Header="{DynamicResource Import.Name}" Binding="{Binding Name}" Width="Auto" MinWidth="100" IsReadOnly="True" />
+                    <DataGridTextColumn x:Name="HostColumn" Header="{DynamicResource Import.Host}" Binding="{Binding Host}" Width="Auto" MinWidth="130" IsReadOnly="True" />
+                    <DataGridTextColumn x:Name="CommandColumn" Header="{DynamicResource Import.Command}" Binding="{Binding CommandLine}" Width="*" IsReadOnly="True" />
                 </DataGrid.Columns>
             </DataGrid>
 

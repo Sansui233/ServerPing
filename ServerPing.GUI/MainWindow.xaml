@@ -34,7 +34,8 @@
                     Background="{DynamicResource TitleBarBrush}"
                     BorderBrush="{DynamicResource BorderBrushDark}"
                     BorderThickness="0,0,0,1">
-            <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Background="Transparent"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -172,7 +173,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Name -->
-                    <DataGridTemplateColumn Header="{DynamicResource Main.Name}" Width="Auto" MaxWidth="160">
+                    <DataGridTemplateColumn x:Name="NameColumn" Header="{DynamicResource Main.Name}" Width="Auto" MaxWidth="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
@@ -187,7 +188,7 @@
 
 
                     <!-- Availability -->
-                    <DataGridTemplateColumn Header="{DynamicResource Main.Availability}" Width="Auto" MinWidth="52">
+                    <DataGridTemplateColumn x:Name="AvailabilityColumn" Header="{DynamicResource Main.Availability}" Width="Auto" MinWidth="52">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding LastHourAvailabilityText}"
@@ -221,7 +222,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Last check -->
-                    <DataGridTextColumn Header="{DynamicResource Main.LastCheck}" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
+                    <DataGridTextColumn x:Name="LastCheckColumn" Header="{DynamicResource Main.LastCheck}" Binding="{Binding LastPingTimeText}" Width="Auto" MinWidth="72">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="VerticalAlignment" Value="Center" />
@@ -231,10 +232,11 @@
                     </DataGridTextColumn>
 
                                         <!-- Host/IP -->
-                    <DataGridTemplateColumn Width="*" MinWidth="126">
+                    <DataGridTemplateColumn x:Name="HostColumn" Width="*" MinWidth="126">
                         <DataGridTemplateColumn.Header>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Host / IP"
+                                <TextBlock x:Name="HostColumnHeaderText"
+                                           Text="{DynamicResource Main.Host}"
                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridColumnHeader}}" />
                                 <Button Width="22" Height="22" Padding="0" Margin="4,0,0,0"
                                         Background="Transparent" BorderThickness="0"
@@ -328,7 +330,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Actions -->
-                    <DataGridTemplateColumn Header="{DynamicResource Main.Actions}" Width="Auto" MinWidth="80">
+                    <DataGridTemplateColumn x:Name="ActionsColumn" Header="{DynamicResource Main.Actions}" Width="Auto" MinWidth="80">
                         <DataGridTemplateColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />

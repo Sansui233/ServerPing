@@ -109,6 +109,8 @@ public partial class App : Application
             Set("ToolTipBackgroundBrush",    0x2A, 0x2E, 0x36);
             Set("ToolTipForegroundBrush",    0xE6, 0xEA, 0xF0);
             Set("ToolTipBorderBrush",        0x40, 0x48, 0x58);
+            Set("ScrollBarThumbBrush",       0x48, 0x51, 0x5F);
+            Set("ScrollBarThumbHoverBrush",  0x5D, 0x68, 0x78);
         }
         else
         {
@@ -134,6 +136,8 @@ public partial class App : Application
             Set("ToolTipBackgroundBrush",    0xF9, 0xFA, 0xFB);
             Set("ToolTipForegroundBrush",    0x1A, 0x1A, 0x1A);
             Set("ToolTipBorderBrush",        0xD0, 0xD5, 0xDD);
+            Set("ScrollBarThumbBrush",       0xC8, 0xCF, 0xD9);
+            Set("ScrollBarThumbHoverBrush",  0xA8, 0xB2, 0xC1);
         }
     }
 

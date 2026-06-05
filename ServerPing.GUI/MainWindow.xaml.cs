@@ -52,6 +52,7 @@ public partial class MainWindow : Window
         var settings = await ViewModel.LoadSettingsAsync();
         LocalizationService.Apply(settings.Language);
         ViewModel.RefreshLocalizedText();
+        RefreshColumnHeaders();
         _hibernateDurationSeconds = settings.GuiHibernateDurationSeconds;
     }
 
@@ -147,8 +148,18 @@ public partial class MainWindow : Window
             var newSettings = await ViewModel.LoadSettingsAsync();
             LocalizationService.Apply(newSettings.Language);
             ViewModel.RefreshLocalizedText();
+            RefreshColumnHeaders();
             _hibernateDurationSeconds = newSettings.GuiHibernateDurationSeconds;
         }
+    }
+
+    private void RefreshColumnHeaders()
+    {
+        NameColumn.Header = LocalizationService.Get("Main.Name");
+        AvailabilityColumn.Header = LocalizationService.Get("Main.Availability");
+        LastCheckColumn.Header = LocalizationService.Get("Main.LastCheck");
+        HostColumnHeaderText.Text = LocalizationService.Get("Main.Host");
+        ActionsColumn.Header = LocalizationService.Get("Main.Actions");
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e)
