@@ -31,6 +31,11 @@ pingService.StatusChanged += (sender, e) =>
     {
         Console.WriteLine($"[离线] {e.Server.Name} ({e.Server.Host})");
         notificationService.ShowServerOfflineNotification(e.Server, pingService.GetSettings().FailureThreshold, playSound: false);
+
+        if (pingService.GetSettings().OfflineNotificationSoundEnabled)
+        {
+            notificationService.PlayNotificationSound();
+        }
     }
     else if (e.PreviousStatus == ServerStatus.Offline && e.Server.Status == ServerStatus.Online)
     {
@@ -38,12 +43,12 @@ pingService.StatusChanged += (sender, e) =>
         notificationService.ShowServerOnlineNotification(e.Server);
     }
 
-    RefreshTrayStatus(playTransitionSound: true);
+    RefreshTrayStatus();
 };
 
-pingService.SettingsChanged += (sender, e) => RefreshTrayStatus(playTransitionSound: true);
-pingService.ServersChanged += (sender, e) => RefreshTrayStatus(playTransitionSound: true);
-pingService.PingResultRecorded += (sender, e) => RefreshTrayStatus(playTransitionSound: true);
+pingService.SettingsChanged += (sender, e) => RefreshTrayStatus();
+pingService.ServersChanged += (sender, e) => RefreshTrayStatus();
+pingService.PingResultRecorded += (sender, e) => RefreshTrayStatus();
 
 trayService.OpenGuiRequested += (sender, e) => guiManager.LaunchGui();
 trayService.ToggleGuiRequested += async (s, pos) => await guiManager.ToggleGui(pos.X, pos.Y);
@@ -80,8 +85,8 @@ pingService.Start(config.Servers, config.Settings);
 ipcServer.Start();
 
 var servers = pingService.GetServers();
-isTrayAlertActive = ShouldEnterAlertState(servers, pingService.GetSettings().FailureThreshold);
-RefreshTrayStatus(playTransitionSound: false);
+isTrayAlertActive = ShouldShowAlertState(servers);
+RefreshTrayStatus();
 
 Console.WriteLine("监控服务已启动，系统托盘图标已显示");
 
@@ -100,39 +105,14 @@ ipcServer.Dispose();
 pingService.Dispose();
 Console.WriteLine("服务已停止");
 
-void RefreshTrayStatus(bool playTransitionSound)
+void RefreshTrayStatus()
 {
     var servers = pingService.GetServers();
-    var settings = pingService.GetSettings();
     var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
-    var previousAlertState = isTrayAlertActive;
-    isTrayAlertActive = GetNextTrayAlertState(servers, settings.FailureThreshold, isTrayAlertActive);
-
-    if (playTransitionSound && previousAlertState != isTrayAlertActive)
-    {
-        if (isTrayAlertActive)
-        {
-            if (settings.OfflineNotificationSoundEnabled)
-            {
-                notificationService.PlayNotificationSound();
-            }
-        }
-    }
+    isTrayAlertActive = ShouldShowAlertState(servers);
 
     trayService.UpdateStatus(onlineCount, servers.Count, isTrayAlertActive);
 }
 
-bool GetNextTrayAlertState(IEnumerable<Server> servers, int threshold, bool currentAlertState) =>
-    currentAlertState
-        ? !ShouldLeaveAlertState(servers)
-        : ShouldEnterAlertState(servers, threshold);
-
-static bool ShouldEnterAlertState(IEnumerable<Server> servers, int threshold) =>
-    servers.Any(s => s.IsEnabled && s.ConsecutiveFailures >= threshold);
-
-bool ShouldLeaveAlertState(IEnumerable<Server> servers)
-{
-    var monitoredServers = servers.Where(s => s.IsEnabled).ToList();
-    return monitoredServers.Count == 0
-        || monitoredServers.All(s => pingService.WasAvailableInLastMinute(s.Id));
-}
+static bool ShouldShowAlertState(IEnumerable<Server> servers) =>
+    servers.Any(s => s.IsEnabled && s.Status == ServerStatus.Offline);

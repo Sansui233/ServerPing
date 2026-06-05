@@ -1,156 +1,131 @@
-# Tray and Recovery State Machine
+# Tray and Offline State Machines
 
-This document tracks the tray alert icon logic, alert sound logic, and the state variables that connect `PingService`, `Program.cs`, and `TrayService`.
+This document tracks two related but separate concepts:
+
+- Per-server `Server.Status`, especially when a server enters or leaves `Offline`.
+- Tray alert state, which is an aggregate view of all enabled servers.
+
+Availability statistics are intentionally separate. Recent-minute availability is a reporting metric; it does not decide whether a server is `Offline` and does not decide whether the tray shows the alert icon.
 
 ## Responsibilities
 
 | Module | Responsibility |
 |--------|----------------|
-| `PingService` | Owns server ping state, rolling statistics, and change events. Maintains per-server consecutive failure counts and last successful ping times. |
-| `Program.cs` | Owns the service-level tray state machine. It listens to `PingService` events, decides when the tray icon changes, and plays the red-transition sound at the same transition. |
-| `TrayService` | Owns the `NotifyIcon`, menu rendering, tooltip, and icon switching. It does not decide alert state; `Program.cs` passes the target tray state into `UpdateStatus(...)`. |
-| `NotificationService` | Plays the bundled offline alert sound and Windows/system fallback sound. |
+| `PingService` | Owns per-server ping state, consecutive failure counts, rolling availability statistics, and `StatusChanged` events. |
+| `Program.cs` | Reacts to server status changes, shows Toast notifications, plays per-server offline sounds, and computes tray alert state. |
+| `TrayService` | Applies the tray icon, tooltip, and menu rendering from the state passed by `Program.cs`. |
+| `NotificationService` | Shows Toast notifications and plays the bundled offline sound or fallback system sound. |
 
-## Core Rule
+## Per-Server Offline State
 
-The tray state has two modes: normal and red.
-
-When the tray icon is normal:
-
-- Watch each enabled server independently.
-- If the same enabled server reaches `MonitoringSettings.FailureThreshold` consecutive failed probes, switch the tray to red.
-- The red transition plays the offline alert sound at the same time when `MonitoringSettings.OfflineNotificationSoundEnabled` is enabled.
-
-When the tray icon is red:
-
-- Stop using the consecutive-failure entry rule as the main decision.
-- Monitor every factor that can make the enabled server set healthy again.
-- If every enabled server has been available within the last 1 minute, switch the tray back to normal.
-- The normal transition does not play a sound.
-
-Alert sound changes and tray icon changes must be synchronized. Sounds are transition effects, not independent status effects.
-
-## State Variables
-
-### `Server.ConsecutiveFailures`
-
-Type:
-
-```csharp
-int
-```
-
-Purpose:
-
-- Counts consecutive failed probes per server.
-- Reset to `0` on a successful ping.
-- Used only for the normal -> red transition.
-- Also used by `PingService` to set `Server.Status = Offline` after the configured threshold.
-
-### `PingService._lastSuccessfulPingTimes`
-
-Type:
-
-```csharp
-Dictionary<string, DateTime>
-```
-
-Purpose:
-
-- Stores the latest successful ping time per server.
-- Used by `PingService.WasAvailableInLastMinute(serverId)`.
-- Used only for the red -> normal transition.
-
-Lifecycle:
-
-- Updated on every successful ping.
-- Removed when a server is removed through `UpdateServers()`.
-- Preserved when server name, host, or enabled state changes.
-
-### `Program.cs isTrayAlertActive`
-
-Type:
-
-```csharp
-bool
-```
-
-Purpose:
-
-- Represents the current tray icon state.
-- `false` means normal icon (`app.ico`).
-- `true` means red alert icon (`app-alert.ico`).
-- Determines which transition rule applies next.
-
-Startup:
-
-- Initialized after `pingService.Start(...)`.
-- Startup refresh uses `playTransitionSound: false`, so startup never plays recovery or alert sounds.
-
-## Events That Refresh Tray State
-
-`Program.cs` calls `RefreshTrayStatus(playTransitionSound: true)` for runtime changes that can affect the tray state:
-
-| Event | Why it matters |
-|-------|----------------|
-| `PingService.PingResultRecorded` | Consecutive failures and last successful ping times may change. |
-| `PingService.StatusChanged` | Server online/offline status changed. Also shows Toast notifications, but does not own tray sound timing. |
-| `PingService.ServersChanged` | Add, delete, enable, disable, or edit server operations can change whether all enabled servers are available. |
-| `PingService.SettingsChanged` | `FailureThreshold` changes can change whether a server crosses the normal -> red threshold. |
-
-Startup calls `RefreshTrayStatus(playTransitionSound: false)`.
-
-## Tray Icon State Machine
+Each enabled server is evaluated independently.
 
 ```text
-normal
-  when any single enabled server has ConsecutiveFailures >= FailureThreshold
-    -> red
-    -> play offline alert sound if enabled
+                         successful ping
+        +----------------------------------------------+
+        |                                              v
+   +---------+                                    +---------+
+   | Unknown |                                    | Online  |
+   +---------+                                    +---------+
+        |                                              |
+        | failed pings keep Unknown                    | failed pings keep Online
+        | until threshold is reached                   | until threshold is reached
+        |                                              |
+        | ConsecutiveFailures >= FailureThreshold      | ConsecutiveFailures >= FailureThreshold
+        v                                              v
+   +---------+ <--------------------------------- +---------+
+   | Offline |      failed pings keep Offline     | Online  |
+   +---------+                                    +---------+
+        |
+        | successful ping resets ConsecutiveFailures to 0
+        v
+   +---------+
+   | Online  |
+   +---------+
+```
 
-red
-  when every enabled server was available in the last 1 minute
-    -> normal
-    -> no sound
+Rules:
+
+- A failed ping increments `Server.ConsecutiveFailures`.
+- A successful ping sets `Server.Status = Online` and resets `Server.ConsecutiveFailures = 0`.
+- When `Server.ConsecutiveFailures >= MonitoringSettings.FailureThreshold`, `PingService` sets `Server.Status = Offline`.
+- Once a server is `Offline`, additional failed pings keep it `Offline`; they do not create another `StatusChanged` event.
+- A server leaves `Offline` only on a successful ping.
+
+## Status Change Effects
+
+`Program.cs` handles `PingService.StatusChanged`.
+
+```text
+Server status changed
+        |
+        +-- previous != Offline && current == Offline
+        |       |
+        |       +-- show offline Toast
+        |       +-- play offline sound if OfflineNotificationSoundEnabled
+        |       +-- refresh tray state
+        |
+        +-- previous == Offline && current == Online
+        |       |
+        |       +-- show recovery Toast
+        |       +-- refresh tray state
+        |
+        +-- any other status change
+                |
+                +-- refresh tray state
+```
+
+Important behavior:
+
+- Offline sound is tied to an individual server entering `Offline`, not to the tray icon transition.
+- If three servers independently enter `Offline`, the offline sound can play three times.
+- Offline Toasts are created with `playSound: false`; the explicit offline sound is played by `Program.cs`.
+- Recovery does not play the offline sound.
+
+## Tray Alert State
+
+The tray state is an aggregate of all enabled servers.
+
+```text
+                         any enabled server is Offline
+       +--------+ --------------------------------------------> +-------+
+       | Normal |                                               | Alert |
+       +--------+ <-------------------------------------------- +-------+
+                    no enabled server is Offline
 ```
 
 State effects:
 
-| State | Tray icon |
-|-------|-----------|
-| `normal` | `app.ico` |
-| `red` | `app-alert.ico` |
+| State | Condition | Tray icon |
+|-------|-----------|-----------|
+| `Normal` | No enabled server has `Status == Offline` | `app.ico` |
+| `Alert` | At least one enabled server has `Status == Offline` | `app-alert.ico` |
 
-`TrayService.UpdateStatus(onlineCount, totalCount, isAlertActive)` applies the state computed by `Program.cs`.
+`Program.cs` computes this with:
 
-## Toast Notifications vs Sounds
+```csharp
+servers.Any(s => s.IsEnabled && s.Status == ServerStatus.Offline)
+```
 
-Toast notifications can still be shown for individual server offline/recovery status changes.
+The tray icon can enter `Alert` when a server enters `Offline`, or when a server that is already `Offline` becomes enabled. The tray icon can leave `Alert` when all enabled servers leave `Offline`, are disabled, or are removed.
 
-Sound timing is intentionally separate:
+## Events That Refresh Tray State
 
-- Offline Toast notifications should not independently play the offline sound when `Program.cs` is already synchronizing sound with the red icon transition.
-- The offline alert sound is skipped when `MonitoringSettings.OfflineNotificationSoundEnabled == false`.
-- Recovery Toast notifications may still appear for individual servers, but the tray red -> normal transition does not play a sound.
+| Event | Why it matters |
+|-------|----------------|
+| `PingService.StatusChanged` | A server may have entered or left `Offline`. This is also where per-server Toast and offline sound behavior runs. |
+| `PingService.PingResultRecorded` | Keeps tray tooltip counts and availability display current. Usually does not change alert state unless status also changed. |
+| `PingService.ServersChanged` | Add, delete, enable, disable, or edit operations can change whether an enabled `Offline` server exists. |
+| `PingService.SettingsChanged` | Threshold or interval changes affect future ping/status behavior and should refresh tray display. |
 
-## User Interactions That Can Change Tray State
+Startup refreshes tray state without playing sounds. Existing offline servers may make the tray start in `Alert`, but startup does not replay offline sounds.
 
-These interactions can change the tray state and must refresh it:
+## Availability
 
-- Add server
-- Remove server
-- Enable or disable server
-- Edit server name or host
-- Change failure threshold
-- Change ping interval, because it changes how quickly probes occur in wall-clock time
-- Pause or resume monitoring, if future behavior changes availability handling for paused servers
-- Ping result arrives and changes consecutive failures or last successful ping time
-- Ping result changes `Server.Status`
+Availability is a statistics concept, not an offline-state concept.
 
-## Implementation Notes
-
-- `MinuteRingBuffer` powers the GUI recent-minute chart and is not used by this tray state machine.
-- Recovery is based on wall-clock availability: every enabled server must have at least one successful ping within the last 1 minute.
-- `PingService.UpdateServers(...)` intentionally preserves runtime status for existing servers, so server-list changes must raise `ServersChanged`.
-- Recovery can happen through successful probes, server deletion, disabling an unavailable server, editing a host so it succeeds, or removing all enabled servers.
-- Alert can happen through failed probes, enabling an already failing server, or lowering the failure threshold below an existing consecutive failure streak.
+- `MinuteRingBuffer` powers recent-minute GUI charts.
+- `StatsFileManager` powers longer rolling availability stats.
+- Ping interval settings change how many samples are recorded over time.
+- Availability can remain high immediately after a server enters `Offline` because it summarizes a time window.
+- Tray alert state must not use recent availability; it uses `Server.Status == Offline`.
