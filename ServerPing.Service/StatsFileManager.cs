@@ -13,6 +13,7 @@ public class StatsFileManager : IDisposable
     private readonly object _lock = new();
     private string _currentHourKey;
     private System.Threading.Timer? _hourlyTimer;
+    private bool _disposed;
 
     public StatsFileManager()
     {
@@ -199,19 +200,41 @@ public class StatsFileManager : IDisposable
         var nextHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddHours(1);
         var delay = nextHour - now;
 
-        _hourlyTimer = new System.Threading.Timer(_ =>
+        if (_disposed)
+            return;
+
+        if (_hourlyTimer is null)
         {
-            lock (_lock)
-            {
-                FlushAndRotate();
-            }
+            _hourlyTimer = new System.Threading.Timer(_ => OnHourlyTimer(), null, delay, Timeout.InfiniteTimeSpan);
+            return;
+        }
+
+        _hourlyTimer.Change(delay, Timeout.InfiniteTimeSpan);
+    }
+
+    private void OnHourlyTimer()
+    {
+        lock (_lock)
+        {
+            if (_disposed)
+                return;
+
+            FlushAndRotate();
             ScheduleHourlyTimer();
-        }, null, delay, Timeout.InfiniteTimeSpan);
+        }
     }
 
     public void Dispose()
     {
-        _hourlyTimer?.Dispose();
+        lock (_lock)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _hourlyTimer?.Dispose();
+            _hourlyTimer = null;
+        }
     }
 }
 
