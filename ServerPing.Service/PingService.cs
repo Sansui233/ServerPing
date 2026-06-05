@@ -9,6 +9,7 @@ public class PingService : IDisposable
     private readonly Dictionary<string, Server> _servers = new();
     private readonly Dictionary<string, MinuteRingBuffer> _minuteBuffers = new();
     private readonly Dictionary<string, DateTime> _lastSuccessfulPingTimes = new();
+    private readonly HashSet<string> _activePings = new();
     private readonly StatsFileManager _statsFileManager;
     private readonly object _lock = new();
     private MonitoringSettings _settings = new();
@@ -119,15 +120,8 @@ public class PingService : IDisposable
 
     private async Task PingServerAsync(string serverId)
     {
-        Server? server;
-        lock (_lock)
-        {
-            if (!_servers.TryGetValue(serverId, out server))
-                return;
-
-            if (server.Host is "0.0.0.0" or "127.0.0.1" or "localhost")
-                return;
-        }
+        if (!TryBeginPing(serverId, out var server))
+            return;
 
         try
         {
@@ -198,6 +192,34 @@ public class PingService : IDisposable
                     }
                 }
             }
+        }
+        finally
+        {
+            EndPing(serverId);
+        }
+    }
+
+    private bool TryBeginPing(string serverId, out Server server)
+    {
+        server = null!;
+
+        lock (_lock)
+        {
+            if (!_servers.TryGetValue(serverId, out server))
+                return false;
+
+            if (server.Host is "0.0.0.0" or "127.0.0.1" or "localhost")
+                return false;
+
+            return _activePings.Add(serverId);
+        }
+    }
+
+    private void EndPing(string serverId)
+    {
+        lock (_lock)
+        {
+            _activePings.Remove(serverId);
         }
     }
 
