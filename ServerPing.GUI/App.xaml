@@ -62,7 +62,7 @@
                 <Setter Property="Foreground"   Value="{DynamicResource TextBrush}" />
                 <Setter Property="BorderBrush"  Value="{DynamicResource BorderBrushDark}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Padding"      Value="7,4" />
+                <Setter Property="Padding"      Value="2,2" />
                 <Setter Property="CaretBrush"   Value="{DynamicResource TextBrush}" />
                 <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
