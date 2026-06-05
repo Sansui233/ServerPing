@@ -69,6 +69,7 @@
     <sys:String x:Key="Dialog.Info">Info</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">Invalid input</sys:String>
     <sys:String x:Key="Dialog.ConfigNotFound">Configuration not found</sys:String>
+    <sys:String x:Key="Dialog.OK">OK</sys:String>
     <sys:String x:Key="Message.GuiAlreadyRunning">ServerPing management panel is already running.</sys:String>
     <sys:String x:Key="Message.AddServerFailed">Failed to add server. Check whether the service is running.</sys:String>
     <sys:String x:Key="Message.NameHostRequired">Name and address cannot be empty.</sys:String>

@@ -37,6 +37,12 @@
             <SolidColorBrush x:Key="ToolTipBorderBrush"        Color="#404858" />
             <SolidColorBrush x:Key="ScrollBarThumbBrush"       Color="#48515F" />
             <SolidColorBrush x:Key="ScrollBarThumbHoverBrush"  Color="#5D6878" />
+            <SolidColorBrush x:Key="MessageInfoBackgroundBrush" Color="#1B2F4A" />
+            <SolidColorBrush x:Key="MessageInfoForegroundBrush" Color="#7DB4FF" />
+            <SolidColorBrush x:Key="MessageWarningBackgroundBrush" Color="#453212" />
+            <SolidColorBrush x:Key="MessageWarningForegroundBrush" Color="#F5B849" />
+            <SolidColorBrush x:Key="MessageErrorBackgroundBrush" Color="#451A1A" />
+            <SolidColorBrush x:Key="MessageErrorForegroundBrush" Color="#F87171" />
 
             <!-- Window -->
             <Style TargetType="Window">

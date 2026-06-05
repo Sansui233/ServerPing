@@ -69,6 +69,7 @@
     <sys:String x:Key="Dialog.Info">Информация</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">Некорректный ввод</sys:String>
     <sys:String x:Key="Dialog.ConfigNotFound">Конфигурация не найдена</sys:String>
+    <sys:String x:Key="Dialog.OK">OK</sys:String>
     <sys:String x:Key="Message.GuiAlreadyRunning">Панель управления ServerPing уже запущена.</sys:String>
     <sys:String x:Key="Message.AddServerFailed">Не удалось добавить сервер. Проверьте, запущена ли служба.</sys:String>
     <sys:String x:Key="Message.NameHostRequired">Имя и адрес не могут быть пустыми.</sys:String>

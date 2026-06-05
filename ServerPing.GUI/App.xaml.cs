@@ -19,10 +19,9 @@ public partial class App : Application
         _mutex = new Mutex(true, "ServerPing.GUI.SingleInstance", out var isNew);
         if (!isNew)
         {
-            MessageBox.Show(
+            ThemeMessageBox.Show(
                 LocalizationService.Get("Message.GuiAlreadyRunning"),
                 LocalizationService.Get("Dialog.Info"),
-                MessageBoxButton.OK,
                 MessageBoxImage.Information);
             Shutdown();
             return;
@@ -111,6 +110,12 @@ public partial class App : Application
             Set("ToolTipBorderBrush",        0x40, 0x48, 0x58);
             Set("ScrollBarThumbBrush",       0x48, 0x51, 0x5F);
             Set("ScrollBarThumbHoverBrush",  0x5D, 0x68, 0x78);
+            Set("MessageInfoBackgroundBrush", 0x1B, 0x2F, 0x4A);
+            Set("MessageInfoForegroundBrush", 0x7D, 0xB4, 0xFF);
+            Set("MessageWarningBackgroundBrush", 0x45, 0x32, 0x12);
+            Set("MessageWarningForegroundBrush", 0xF5, 0xB8, 0x49);
+            Set("MessageErrorBackgroundBrush", 0x45, 0x1A, 0x1A);
+            Set("MessageErrorForegroundBrush", 0xF8, 0x71, 0x71);
         }
         else
         {
@@ -138,6 +143,12 @@ public partial class App : Application
             Set("ToolTipBorderBrush",        0xD0, 0xD5, 0xDD);
             Set("ScrollBarThumbBrush",       0xC8, 0xCF, 0xD9);
             Set("ScrollBarThumbHoverBrush",  0xA8, 0xB2, 0xC1);
+            Set("MessageInfoBackgroundBrush", 0xDB, 0xEA, 0xFF);
+            Set("MessageInfoForegroundBrush", 0x1D, 0x4E, 0x89);
+            Set("MessageWarningBackgroundBrush", 0xFE, 0xF3, 0xC7);
+            Set("MessageWarningForegroundBrush", 0x92, 0x4D, 0x0E);
+            Set("MessageErrorBackgroundBrush", 0xFE, 0xE2, 0xE2);
+            Set("MessageErrorForegroundBrush", 0xB9, 0x1C, 0x1C);
         }
     }
 

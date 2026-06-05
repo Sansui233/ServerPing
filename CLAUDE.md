@@ -52,16 +52,19 @@ ServerPing.sln
 
 | File | Purpose |
 |------|---------|
-| `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Dark theme resource dictionary (brushes, button/datagrid/textbox styles, CornerRadius=4). |
+| `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
-| `SettingsDialog.xaml` / `SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
-| `ImportDialog.xaml` / `ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
+| `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
+| `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
+| `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
+| `Styles/ScrollBar.xaml` | Theme-aware global ScrollBar control template merged by `App.xaml`. |
 | `ViewModels/ViewModelBase.cs` | `INotifyPropertyChanged` base with `SetProperty<T>`. |
 | `ViewModels/RelayCommand.cs` | `ICommand` implementation supporting async delegates and CanExecute. |
 | `ViewModels/MainViewModel.cs` | MVVM brain. 3-second `DispatcherTimer` refresh loop. All IPC calls routed through `IpcClient`. |
 | `ViewModels/ServerViewModel.cs` | Per-row ViewModel. Wraps `Server` + `ServerStats`. Computed properties: `StatusText`, `LastPingTimeText`, `LastHourStatsText`, `LastHourAvailabilityText`. |
 | `ViewModels/SshProfileViewModel.cs` | Wraps `SshProfile` with `IsSelected` for import dialog binding. |
 | `Services/IpcClient.cs` | Named Pipe client. 3-second connect timeout. All methods async. |
+| `Services/ThemeMessageBox.cs` | Central API for showing `ThemedMessageBox` with localized text and active-window ownership. |
 | `Services/WindowsTerminalParser.cs` | Parses `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState/settings.json`. Extracts SSH profiles via regex. |
 | `Converters/EnableToggleConverter.cs` | `true` → "禁用", `false` → "启用". |
 
@@ -165,4 +168,4 @@ All core features complete:
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
 - **Do Not Build** for validation modifications.
 
-You Must update CLAUDE.mdfile to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.
+You Must update CLAUDE.md file to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.

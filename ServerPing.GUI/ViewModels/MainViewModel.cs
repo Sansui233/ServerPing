@@ -269,11 +269,11 @@ public class MainViewModel : ViewModelBase
         }
         catch (FileNotFoundException ex)
         {
-            MessageBox.Show(ex.Message, LocalizationService.Get("Dialog.ConfigNotFound"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            ThemeMessageBox.Show(ex.Message, LocalizationService.Get("Dialog.ConfigNotFound"), MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(LocalizationService.Format("Message.ImportFailed", ex.Message), LocalizationService.Get("Dialog.Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+            ThemeMessageBox.Show(LocalizationService.Format("Message.ImportFailed", ex.Message), LocalizationService.Get("Dialog.Error"), MessageBoxImage.Error);
         }
     }
 
@@ -285,5 +285,5 @@ public class MainViewModel : ViewModelBase
     }
 
     private static void ShowMessage(string messageKey, string captionKey, MessageBoxImage image) =>
-        MessageBox.Show(LocalizationService.Get(messageKey), LocalizationService.Get(captionKey), MessageBoxButton.OK, image);
+        ThemeMessageBox.ShowLocalized(messageKey, captionKey, image);
 }

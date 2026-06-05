@@ -69,6 +69,7 @@
     <sys:String x:Key="Dialog.Info">提示</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">输入无效</sys:String>
     <sys:String x:Key="Dialog.ConfigNotFound">未找到配置</sys:String>
+    <sys:String x:Key="Dialog.OK">确定</sys:String>
     <sys:String x:Key="Message.GuiAlreadyRunning">ServerPing 管理面板已在运行。</sys:String>
     <sys:String x:Key="Message.AddServerFailed">添加服务器失败，请检查服务是否运行。</sys:String>
     <sys:String x:Key="Message.NameHostRequired">名称和地址不能为空。</sys:String>
