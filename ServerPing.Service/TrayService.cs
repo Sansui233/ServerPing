@@ -8,6 +8,9 @@ namespace ServerPing.Service;
 
 public class TrayService : IDisposable
 {
+    private const string DefaultIconFileName = "app.ico";
+    private const string AlertIconFileName = "app-alert.ico";
+
     private readonly NotifyIcon _trayIcon;
     private readonly ContextMenuStrip _contextMenu;
     private readonly Form _menuOwner;
@@ -20,6 +23,9 @@ public class TrayService : IDisposable
     private readonly Func<string, double?> _getLastHourAvailability;
     private readonly Func<MonitoringSettings> _getSettings;
     private readonly List<ToolStripItem> _statusItems = [];
+    private Icon? _defaultIcon;
+    private Icon? _alertIcon;
+    private bool _isAlertIconActive;
     private bool _isMonitoringPaused;
 
     public event EventHandler? OpenGuiRequested;
@@ -89,7 +95,8 @@ public class TrayService : IDisposable
 
         _trayIcon.MouseClick += TrayIcon_MouseClick;
 
-        LoadIcon();
+        LoadIcons();
+        ApplyTrayIcon(hasOfflineServers: false);
     }
 
     private void TrayIcon_MouseClick(object? sender, MouseEventArgs e)
@@ -169,32 +176,55 @@ public class TrayService : IDisposable
             {
                 item.Dispose();
             }
+
+            if (_alertIcon is not null && !ReferenceEquals(_alertIcon, _defaultIcon))
+            {
+                _alertIcon.Dispose();
+            }
+
+            if (!ReferenceEquals(_defaultIcon, SystemIcons.Application))
+            {
+                _defaultIcon?.Dispose();
+            }
         }
     }
 
-    private void LoadIcon()
+    private void LoadIcons()
+    {
+        _defaultIcon = LoadIcon(DefaultIconFileName) ?? SystemIcons.Application;
+        _alertIcon = LoadIcon(AlertIconFileName) ?? _defaultIcon;
+    }
+
+    private static Icon? LoadIcon(string fileName)
     {
         try
         {
-            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
-            if (File.Exists(iconPath))
-            {
-                _trayIcon.Icon = new Icon(iconPath);
-            }
-            else
-            {
-                _trayIcon.Icon = SystemIcons.Application;
-            }
+            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+            return File.Exists(iconPath) ? new Icon(iconPath) : null;
         }
         catch
         {
-            _trayIcon.Icon = SystemIcons.Application;
+            return null;
         }
+    }
+
+    private void ApplyTrayIcon(bool hasOfflineServers)
+    {
+        if (_isAlertIconActive == hasOfflineServers && _trayIcon.Icon is not null)
+        {
+            return;
+        }
+
+        _trayIcon.Icon = hasOfflineServers ? _alertIcon : _defaultIcon;
+        _isAlertIconActive = hasOfflineServers;
     }
 
     public void UpdateStatus(int onlineCount, int totalCount)
     {
-        var availability = AverageAvailability(_getServers()
+        var servers = _getServers();
+        ApplyTrayIcon(servers.Any(server => server.Status == ServerStatus.Offline));
+
+        var availability = AverageAvailability(servers
             .Select(server => _getLastHourAvailability(server.Id)));
         var text = string.Format(
             T("Tray.Tooltip"),
