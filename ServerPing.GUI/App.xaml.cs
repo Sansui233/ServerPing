@@ -43,13 +43,11 @@ public partial class App : Application
         var (posX, posY) = ParsePositionArgs(e.Args);
         if (posX.HasValue && posY.HasValue)
         {
-            mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-            mainWindow.Show();
-            mainWindow.PositionNearCursor(posX.Value, posY.Value);
+            mainWindow.ShowNearCursor(posX.Value, posY.Value);
         }
         else
         {
-            mainWindow.Show();
+            mainWindow.ShowCentered();
         }
 
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
