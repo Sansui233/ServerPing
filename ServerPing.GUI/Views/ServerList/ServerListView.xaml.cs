@@ -29,6 +29,7 @@ public partial class ServerListView : UserControl
         AvailabilityColumn.Header = LocalizationService.Get("Main.Availability");
         LastCheckColumn.Header = LocalizationService.Get("Main.LastCheck");
         HostColumnHeaderText.Text = LocalizationService.Get("Main.Host");
+        LatencyColumn.Header = LocalizationService.Get("Main.Latency");
         ActionsColumn.Header = LocalizationService.Get("Main.Actions");
     }
 

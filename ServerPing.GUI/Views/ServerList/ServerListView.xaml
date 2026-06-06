@@ -218,6 +218,24 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
+                <!-- Latency -->
+                <DataGridTemplateColumn x:Name="LatencyColumn" Header="{DynamicResource Main.Latency}" Width="Auto" MinWidth="58" CanUserResize="False">
+                    <DataGridTemplateColumn.HeaderStyle>
+                        <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                            <Setter Property="HorizontalContentAlignment" Value="Right" />
+                        </Style>
+                    </DataGridTemplateColumn.HeaderStyle>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding LatencyText}"
+                                       Foreground="{Binding LatencyColor}"
+                                       FontWeight="SemiBold"
+                                       TextAlignment="Right"
+                                       VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <!-- Actions -->
                 <DataGridTemplateColumn x:Name="ActionsColumn" Header="{DynamicResource Main.Actions}" Width="Auto" MinWidth="80">
                     <DataGridTemplateColumn.HeaderStyle>

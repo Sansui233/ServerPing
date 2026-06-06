@@ -14,12 +14,13 @@ public class ServerViewModel : ViewModelBase
 {
     private static readonly Brush GreenBrush  = new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99));
     private static readonly Brush YellowBrush = new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24));
+    private static readonly Brush OrangeBrush = new SolidColorBrush(Color.FromRgb(0xFB, 0x92, 0x3C));
     private static readonly Brush RedBrush    = new SolidColorBrush(Color.FromRgb(0xF8, 0x71, 0x71));
     private static readonly Brush GrayBrush   = new SolidColorBrush(Color.FromRgb(0x98, 0xA2, 0xB3));
 
     static ServerViewModel()
     {
-        GreenBrush.Freeze(); YellowBrush.Freeze(); RedBrush.Freeze(); GrayBrush.Freeze();
+        GreenBrush.Freeze(); YellowBrush.Freeze(); OrangeBrush.Freeze(); RedBrush.Freeze(); GrayBrush.Freeze();
     }
 
     private string _id = "";
@@ -28,6 +29,7 @@ public class ServerViewModel : ViewModelBase
     private bool _isEnabled = true;
     private ServerStatus _status = ServerStatus.Unknown;
     private DateTime? _lastPingTime;
+    private long? _lastLatencyMilliseconds;
     private int _consecutiveFailures;
     private PingStatsWindow _lastHourStats = new();
     private MinuteBarViewModel[] _minuteBars = [];
@@ -46,6 +48,8 @@ public class ServerViewModel : ViewModelBase
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusTooltipText));
             OnPropertyChanged(nameof(LastPingTimeText));
+            OnPropertyChanged(nameof(LatencyText));
+            OnPropertyChanged(nameof(LatencyColor));
             OnPropertyChanged(nameof(StatusDotColor));
             NotifyStatsChanged();
         }
@@ -61,6 +65,8 @@ public class ServerViewModel : ViewModelBase
             OnPropertyChanged(nameof(StatusDotColor));
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusTooltipText));
+            OnPropertyChanged(nameof(LatencyText));
+            OnPropertyChanged(nameof(LatencyColor));
         }
     }
 
@@ -80,6 +86,17 @@ public class ServerViewModel : ViewModelBase
     {
         get => _lastPingTime;
         set { if (SetProperty(ref _lastPingTime, value)) OnPropertyChanged(nameof(LastPingTimeText)); }
+    }
+
+    public long? LastLatencyMilliseconds
+    {
+        get => _lastLatencyMilliseconds;
+        set
+        {
+            if (!SetProperty(ref _lastLatencyMilliseconds, value)) return;
+            OnPropertyChanged(nameof(LatencyText));
+            OnPropertyChanged(nameof(LatencyColor));
+        }
     }
 
     public int ConsecutiveFailures { get => _consecutiveFailures; set => SetProperty(ref _consecutiveFailures, value); }
@@ -115,11 +132,17 @@ public class ServerViewModel : ViewModelBase
 
     public string LastPingTimeText => IsPlaceholderHost ? "—" : LastPingTime?.ToString("HH:mm:ss") ?? "-";
 
+    public string LatencyText => !IsEnabled || IsPlaceholderHost || !LastLatencyMilliseconds.HasValue
+        ? "—"
+        : $"{LastLatencyMilliseconds.Value} ms";
+
     public string LastHourAvailabilityText => IsPlaceholderHost ? "—" : FormatAvailability(LastHourStats.AvailabilityPercent);
 
     public Brush StatusDotColor => ComputeStatusBrush();
 
     public Brush AvailabilityColor => ComputeAvailabilityBrush(LastHourStats);
+
+    public Brush LatencyColor => ComputeLatencyBrush();
 
     public Brush EnableIconColor => IsEnabled ? GreenBrush : GrayBrush;
 
@@ -145,6 +168,19 @@ public class ServerViewModel : ViewModelBase
             ServerStatus.Online => GreenBrush,
             ServerStatus.Offline => RedBrush,
             _ => GrayBrush
+        };
+    }
+
+    private Brush ComputeLatencyBrush()
+    {
+        if (!IsEnabled || IsPlaceholderHost || !LastLatencyMilliseconds.HasValue) return GrayBrush;
+
+        return LastLatencyMilliseconds.Value switch
+        {
+            <= 100 => GreenBrush,
+            <= 200 => YellowBrush,
+            < 300 => OrangeBrush,
+            _ => RedBrush
         };
     }
 
@@ -178,6 +214,7 @@ public class ServerViewModel : ViewModelBase
         IsEnabled = server.IsEnabled,
         Status = server.Status,
         LastPingTime = server.LastPingTime,
+        LastLatencyMilliseconds = server.LastLatencyMilliseconds,
         ConsecutiveFailures = server.ConsecutiveFailures
     };
 
@@ -202,6 +239,7 @@ public class ServerViewModel : ViewModelBase
 
         Status = server.Status;
         LastPingTime = server.LastPingTime;
+        LastLatencyMilliseconds = server.LastLatencyMilliseconds;
         ConsecutiveFailures = server.ConsecutiveFailures;
         IsEnabled = server.IsEnabled;
     }

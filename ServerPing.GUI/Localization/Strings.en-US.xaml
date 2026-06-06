@@ -33,6 +33,7 @@
     <sys:String x:Key="Main.Availability">Availability</sys:String>
     <sys:String x:Key="Main.LastCheck">Last check</sys:String>
     <sys:String x:Key="Main.Host">Host / IP</sys:String>
+    <sys:String x:Key="Main.Latency">Delay</sys:String>
     <sys:String x:Key="Main.Actions">Actions</sys:String>
     <sys:String x:Key="Main.ToggleEnabled">Enable/disable</sys:String>
     <sys:String x:Key="Main.Delete">Delete</sys:String>

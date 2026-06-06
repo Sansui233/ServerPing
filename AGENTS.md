@@ -29,7 +29,7 @@ ServerPing.sln
 
 | File | Purpose |
 |------|---------|
-| `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, ConsecutiveFailures |
+| `Models/Server.cs` | Server entity: Id (Guid string), Name, Host, IsEnabled, Status, LastPingTime, LastLatencyMilliseconds, ConsecutiveFailures |
 | `Models/ServerStatus.cs` | Enum: Unknown, Online, Offline |
 | `Models/ServerConfiguration.cs` | Config root: `List<Server>` + `MonitoringSettings` |
 | `Models/MonitoringSettings.cs` | Configurable thresholds with clamping: PingIntervalSeconds (default 3, range 1-300), FailureThreshold (default 3, range 1-20), SilentStartup, offline notification sound. Exposes `Clone()`. |
@@ -43,7 +43,7 @@ ServerPing.sln
 | File | Purpose |
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
-| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Rolling stats and change events. Exposes `Pause()`/`Resume()`. Offline/tray-related state details are documented in `DOCS/tray-state-machine.md`. |
+| `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Updates status, last check time, current latency, rolling stats, and change events. Exposes `Pause()`/`Resume()`. Offline/tray-related state details are documented in `DOCS/tray-state-machine.md`. |
 | `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline alert sound can be played explicitly by service logic with bundled `offline.wav` and fallback. |
 | `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Alert icon behavior is summarized in Key Design Decisions and detailed in `DOCS/tray-state-machine.md`. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
@@ -55,7 +55,7 @@ ServerPing.sln
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
 | `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless shell window with custom title bar, tray toggle positioning, hibernation timer, and Settings (⚙) dialog launch. The server list UI is hosted through `Views/ServerList/ServerListView`. |
-| `Views/ServerList/ServerListView.xaml` / `Views/ServerList/ServerListView.xaml.cs` | Server list component. Owns the DataGrid, inline name/host editing events, stats columns, host visibility button, name sort header, and drag/drop insertion indicator. |
+| `Views/ServerList/ServerListView.xaml` / `Views/ServerList/ServerListView.xaml.cs` | Server list component. Owns the DataGrid, inline name/host editing events, stats columns, latency display, host visibility button, name sort header, and drag/drop insertion indicator. |
 | `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
@@ -65,7 +65,7 @@ ServerPing.sln
 | `ViewModels/ViewModelBase.cs` | `INotifyPropertyChanged` base with `SetProperty<T>`. |
 | `ViewModels/RelayCommand.cs` | `ICommand` implementation supporting async delegates and CanExecute. |
 | `ViewModels/MainViewModel.cs` | MVVM brain. 3-second `DispatcherTimer` refresh loop, GUI sort state coordination, and all IPC calls routed through `IpcClient`. |
-| `ViewModels/ServerViewModel.cs` | Per-row ViewModel. Wraps `Server` + `ServerStats`. Computed properties: `StatusText`, `LastPingTimeText`, `LastHourStatsText`, `LastHourAvailabilityText`. |
+| `ViewModels/ServerViewModel.cs` | Per-row ViewModel. Wraps `Server` + `ServerStats`. Computed properties: `StatusText`, `LastPingTimeText`, `LatencyText`, `LatencyColor`, `LastHourStatsText`, `LastHourAvailabilityText`. |
 | `ViewModels/SshProfileViewModel.cs` | Wraps `SshProfile` with `IsSelected` for import dialog binding. |
 | `Services/GuiStateStore.cs` | Read/write `%APPDATA%\ServerPing\gui-state.json` for GUI-only state. Failures are treated as non-critical. |
 | `Services/IpcClient.cs` | Named Pipe client. 3-second connect timeout. All methods async. |
@@ -112,7 +112,7 @@ Windows Terminal settings location:
 - **Single Named Pipe (one connection at a time):** Sufficient since only one GUI instance can run (Mutex-guarded). Avoids complexity of concurrent IPC.
 - **3-second GUI refresh:** `DispatcherTimer` on UI thread polls `GetServers` + `GetStats`. No push notifications from Service to GUI — acceptable latency.
 - **GUI-only ordering state:** Server configuration remains service-owned and IPC-backed. Server list custom order and sort mode are presentation state persisted by the GUI in `gui-state.json`, so drag/drop ordering does not rewrite server identity/configuration order.
-- **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
+- **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/LastLatencyMilliseconds/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
 - **Offline, sound, and tray alert state:** Each server enters `Offline` when its consecutive failures reach the user-configured threshold, and leaves `Offline` on a successful ping. Offline sound plays per server when it enters `Offline`. The tray alert icon is active whenever any enabled server is `Offline`. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
 
@@ -178,6 +178,7 @@ All core features complete:
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)
 - ✅ Server list name sorting (Auto / A-Z / Z-A) with GUI-persisted custom drag/drop order
+- ✅ Server list current latency display with threshold-based coloring
 - ✅ 1h / 24h ping statistics with availability %
 - ✅ Settings dialog (ping interval, failure threshold, silent startup)
 - ✅ Windows Terminal SSH Profile import
@@ -190,7 +191,7 @@ All core features complete:
 - **Platform:** Windows-only (Windows notifications, system tray, WPF)
 - **Resource Usage:** Service must stay under 20MB memory when GUI is closed
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
-- **UI Localization:** New or changed user-facing GUI text, tooltips, validation messages, and dialog content must use the existing localization flow (`LocalizationService` or `DynamicResource`) and update all language resource dictionaries under `ServerPing.GUI/Localization/`.
+- **UI Localization:** New or changed user-facing GUI text, tooltips, validation messages, and dialog content must use the existing localization flow (`LocalizationService` or `DynamicResource`) and update all language resource dictionaries under `ServerPing.GUI/Localization/`. Text that does not reliably refresh through `DynamicResource` during language changes, especially `DataGridColumn.Header`, must also be updated in the relevant `RefreshLocalizedText()` path.
 - **Do Not Build** for validation modifications.
 
 You Must update AGENTS.md file to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.

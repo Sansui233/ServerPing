@@ -33,6 +33,7 @@
     <sys:String x:Key="Main.Availability">Доступность</sys:String>
     <sys:String x:Key="Main.LastCheck">Последняя проверка</sys:String>
     <sys:String x:Key="Main.Host">Хост / IP</sys:String>
+    <sys:String x:Key="Main.Latency">Задержка</sys:String>
     <sys:String x:Key="Main.Actions">Действия</sys:String>
     <sys:String x:Key="Main.ToggleEnabled">Включить/выключить</sys:String>
     <sys:String x:Key="Main.Delete">Удалить</sys:String>

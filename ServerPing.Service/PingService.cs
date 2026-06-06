@@ -152,12 +152,14 @@ public class PingService : IDisposable
                 {
                     server.Status = ServerStatus.Online;
                     server.ConsecutiveFailures = 0;
+                    server.LastLatencyMilliseconds = reply.RoundtripTime;
                     _lastSuccessfulPingTimes[serverId] = pingTime;
                     RecordPingResult(serverId, true);
                 }
                 else
                 {
                     server.ConsecutiveFailures++;
+                    server.LastLatencyMilliseconds = null;
                     RecordPingResult(serverId, false);
 
                     if (server.ConsecutiveFailures >= _settings.FailureThreshold)
@@ -185,6 +187,7 @@ public class PingService : IDisposable
 
                 server.ConsecutiveFailures++;
                 server.LastPingTime = DateTime.Now;
+                server.LastLatencyMilliseconds = null;
                 RecordPingResult(serverId, false);
 
                 var previousStatus = server.Status;
