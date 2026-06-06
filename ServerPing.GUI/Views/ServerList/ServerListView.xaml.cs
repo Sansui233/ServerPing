@@ -16,6 +16,7 @@ public partial class ServerListView : UserControl
     private Point? _dragStartPoint;
     private ServerViewModel? _draggedServer;
     private int _dropInsertIndex = -1;
+    private double? _dropIndicatorY;
 
     public ServerListView()
     {
@@ -134,16 +135,21 @@ public partial class ServerListView : UserControl
         }
 
         var result = GetDropInsertion(e.GetPosition(ServerDataGrid));
-        _dropInsertIndex = result.Index;
-        ShowDropInsertionIndicator(result.Y);
+        ShowDropInsertionIndicator(result.Index, result.Y);
         e.Effects = DragDropEffects.Move;
         e.Handled = true;
     }
 
     private void ServerDataGrid_DragLeave(object sender, DragEventArgs e)
     {
-        if (!ServerDataGrid.IsMouseOver)
+        var position = e.GetPosition(ServerDataGrid);
+        if (position.X < 0
+            || position.Y < 0
+            || position.X > ServerDataGrid.ActualWidth
+            || position.Y > ServerDataGrid.ActualHeight)
+        {
             HideDropInsertionIndicator();
+        }
     }
 
     private async void ServerDataGrid_Drop(object sender, DragEventArgs e)
@@ -209,16 +215,33 @@ public partial class ServerListView : UserControl
         return fallbackY;
     }
 
-    private void ShowDropInsertionIndicator(double y)
+    private void ShowDropInsertionIndicator(int index, double y)
     {
-        DropInsertionIndicator.Margin = new Thickness(8, Math.Max(0, y - 1), 8, 0);
-        DropInsertionIndicator.Visibility = Visibility.Visible;
+        y = Math.Max(0, y - 1);
+        if (_dropInsertIndex == index
+            && _dropIndicatorY.HasValue
+            && Math.Abs(_dropIndicatorY.Value - y) < 0.5
+            && DropInsertionIndicator.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
+        _dropInsertIndex = index;
+        _dropIndicatorY = y;
+        DropInsertionIndicatorTransform.Y = y;
+
+        if (DropInsertionIndicator.Visibility != Visibility.Visible)
+            DropInsertionIndicator.Visibility = Visibility.Visible;
     }
 
     private void HideDropInsertionIndicator()
     {
+        if (DropInsertionIndicator.Visibility != Visibility.Visible)
+            return;
+
         DropInsertionIndicator.Visibility = Visibility.Collapsed;
         _dropInsertIndex = -1;
+        _dropIndicatorY = null;
     }
 
     private void PrepareManualOrdering()

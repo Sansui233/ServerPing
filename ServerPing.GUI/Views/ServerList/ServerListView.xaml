@@ -305,6 +305,10 @@
                 VerticalAlignment="Top"
                 Background="{DynamicResource AccentBrush}"
                 Visibility="Collapsed"
-                IsHitTestVisible="False" />
+                IsHitTestVisible="False">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="DropInsertionIndicatorTransform" />
+            </Border.RenderTransform>
+        </Border>
     </Grid>
 </UserControl>
