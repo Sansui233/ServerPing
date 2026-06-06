@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using ServerPing.GUI.Models;
 using ServerPing.GUI.Services;
 using ServerPing.Shared.Models;
 
@@ -10,13 +11,17 @@ namespace ServerPing.GUI.ViewModels;
 public class MainViewModel : ViewModelBase
 {
     private readonly IpcClient _ipcClient = new();
+    private readonly GuiStateStore _guiStateStore = new();
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _undoTimer;
+    private readonly List<string> _customOrderIds = [];
+    private readonly List<string> _serviceOrderIds = [];
     private ServerViewModel? _selectedServer;
     private string _statusMessage = LocalizationService.Get("Status.Connecting");
     private bool _isConnected;
     private bool _canUndo;
     private bool _isHostVisible = true;
+    private ServerSortMode _nameSortMode = ServerSortMode.Auto;
     private string? _lastDeletedName;
     private string? _lastDeletedHost;
 
@@ -62,6 +67,17 @@ public class MainViewModel : ViewModelBase
         ? LocalizationService.Get("Main.HideHost")
         : LocalizationService.Get("Main.ShowHost");
 
+    public string NameSortModeLabel => _nameSortMode switch
+    {
+        ServerSortMode.AToZ => LocalizationService.Get("Main.SortAtoZ"),
+        ServerSortMode.ZToA => LocalizationService.Get("Main.SortZtoA"),
+        _ => ""
+    };
+
+    public bool IsNameSortModeLabelVisible => _nameSortMode != ServerSortMode.Auto;
+
+    public ServerSortMode NameSortMode => _nameSortMode;
+
     public RelayCommand AddServerCommand { get; }
     public RelayCommand RemoveServerCommand { get; }
     public RelayCommand ToggleServerCommand { get; }
@@ -89,6 +105,7 @@ public class MainViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
+        LoadGuiState();
         await RefreshServersAsync();
         _refreshTimer.Start();
     }
@@ -104,6 +121,7 @@ public class MainViewModel : ViewModelBase
         try
         {
             var servers = await _ipcClient.GetServersAsync();
+            SyncServerOrders(servers);
 
             foreach (var serverModel in servers)
             {
@@ -118,6 +136,9 @@ public class MainViewModel : ViewModelBase
             var toRemove = Servers.Where(s => !serverIds.Contains(s.Id)).ToList();
             foreach (var s in toRemove)
                 Servers.Remove(s);
+
+            if (!Servers.Any(s => s.IsEditingIdentity))
+                ApplyDisplayOrder();
 
             var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
             StatusMessage = LocalizationService.Format("Status.Connected", onlineCount, servers.Count);
@@ -143,7 +164,13 @@ public class MainViewModel : ViewModelBase
     {
         var server = await _ipcClient.AddServerAsync(LocalizationService.Get("Server.NewServer"), "0.0.0.0");
         if (server != null)
+        {
+            _customOrderIds.Add(server.Id);
+            _serviceOrderIds.Add(server.Id);
+            SaveGuiState();
             Servers.Add(ServerViewModel.FromModel(server));
+            ApplyDisplayOrder();
+        }
         else
             ShowMessage("Message.AddServerFailed", "Dialog.Error", MessageBoxImage.Error);
     }
@@ -156,6 +183,9 @@ public class MainViewModel : ViewModelBase
         if (await _ipcClient.RemoveServerAsync(server.Id))
         {
             Servers.Remove(server);
+            _customOrderIds.Remove(server.Id);
+            _serviceOrderIds.Remove(server.Id);
+            SaveGuiState();
             _lastDeletedName = server.Name;
             _lastDeletedHost = server.Host;
             CanUndo = true;
@@ -171,7 +201,13 @@ public class MainViewModel : ViewModelBase
 
         var server = await _ipcClient.AddServerAsync(_lastDeletedName, _lastDeletedHost);
         if (server != null)
+        {
+            _customOrderIds.Add(server.Id);
+            _serviceOrderIds.Add(server.Id);
+            SaveGuiState();
             Servers.Add(ServerViewModel.FromModel(server));
+            ApplyDisplayOrder();
+        }
 
         ClearUndo();
     }
@@ -190,8 +226,74 @@ public class MainViewModel : ViewModelBase
             return;
 
         server.IsEnabled = !server.IsEnabled;
-        var allServers = Servers.Select(s => s.ToModel()).ToList();
+        var allServers = GetServersInServiceOrder();
         await _ipcClient.UpdateServersAsync(allServers);
+    }
+
+    public void CycleNameSortMode()
+    {
+        _nameSortMode = _nameSortMode switch
+        {
+            ServerSortMode.Auto => ServerSortMode.AToZ,
+            ServerSortMode.AToZ => ServerSortMode.ZToA,
+            _ => ServerSortMode.Auto
+        };
+
+        NotifySortModeChanged();
+        SaveGuiState();
+        ApplyDisplayOrder();
+    }
+
+    public void ResetNameSortMode()
+    {
+        if (_nameSortMode == ServerSortMode.Auto)
+            return;
+
+        _nameSortMode = ServerSortMode.Auto;
+        NotifySortModeChanged();
+        SaveGuiState();
+    }
+
+    public void UseCustomOrder(IReadOnlyList<ServerViewModel> orderedServers)
+    {
+        if (orderedServers.Count != Servers.Count || orderedServers.Distinct().Count() != Servers.Count)
+            return;
+
+        if (orderedServers.Any(server => !Servers.Contains(server)))
+            return;
+
+        for (var targetIndex = 0; targetIndex < orderedServers.Count; targetIndex++)
+        {
+            var currentIndex = Servers.IndexOf(orderedServers[targetIndex]);
+            if (currentIndex >= 0 && currentIndex != targetIndex)
+                Servers.Move(currentIndex, targetIndex);
+        }
+
+        _nameSortMode = ServerSortMode.Auto;
+        NotifySortModeChanged();
+        RebuildCustomOrderFromCurrentView();
+        SaveGuiState();
+    }
+
+    public Task<bool> MoveServerAsync(ServerViewModel server, int insertIndex)
+    {
+        if (!Servers.Contains(server))
+            return Task.FromResult(false);
+
+        insertIndex = Math.Clamp(insertIndex, 0, Servers.Count);
+        var oldIndex = Servers.IndexOf(server);
+        if (oldIndex < insertIndex)
+            insertIndex--;
+
+        if (oldIndex == insertIndex)
+            return Task.FromResult(true);
+
+        Servers.Move(oldIndex, insertIndex);
+        _nameSortMode = ServerSortMode.Auto;
+        NotifySortModeChanged();
+        RebuildCustomOrderFromCurrentView();
+        SaveGuiState();
+        return Task.FromResult(true);
     }
 
     public async Task<bool> SaveServerAsync(ServerViewModel server)
@@ -206,7 +308,7 @@ public class MainViewModel : ViewModelBase
             return false;
         }
 
-        var allServers = Servers.Select(s => s.ToModel()).ToList();
+        var allServers = GetServersInServiceOrder();
         if (!await _ipcClient.UpdateServersAsync(allServers))
         {
             ShowMessage("Message.SaveServerFailed", "Dialog.Error", MessageBoxImage.Error);
@@ -214,6 +316,7 @@ public class MainViewModel : ViewModelBase
         }
 
         StatusMessage = LocalizationService.Format("Status.Saved", server.Name);
+        ApplyDisplayOrder();
         return true;
     }
 
@@ -280,8 +383,123 @@ public class MainViewModel : ViewModelBase
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(HostVisibilityToolTip));
+        NotifySortModeChanged();
         foreach (var server in Servers)
             server.RefreshLocalizedText();
+    }
+
+    private void LoadGuiState()
+    {
+        var state = _guiStateStore.Load();
+        _nameSortMode = state.NameSortMode;
+        _customOrderIds.Clear();
+        _customOrderIds.AddRange(state.ServerOrderIds.Distinct());
+        NotifySortModeChanged();
+    }
+
+    private void SaveGuiState()
+    {
+        _guiStateStore.Save(new GuiState
+        {
+            NameSortMode = _nameSortMode,
+            ServerOrderIds = _customOrderIds.ToList()
+        });
+    }
+
+    private void SyncServerOrders(List<Server> servers)
+    {
+        _serviceOrderIds.Clear();
+        _serviceOrderIds.AddRange(servers.Select(s => s.Id).Distinct());
+
+        var changed = false;
+        var serverIds = _serviceOrderIds.ToHashSet();
+        changed |= _customOrderIds.RemoveAll(id => !serverIds.Contains(id)) > 0;
+
+        foreach (var id in _serviceOrderIds)
+        {
+            if (_customOrderIds.Contains(id))
+                continue;
+
+            _customOrderIds.Add(id);
+            changed = true;
+        }
+
+        if (changed)
+            SaveGuiState();
+    }
+
+    private void ApplyDisplayOrder()
+    {
+        var ordered = _nameSortMode switch
+        {
+            ServerSortMode.AToZ => Servers
+                .OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(s => s.Host, StringComparer.CurrentCultureIgnoreCase)
+                .ToList(),
+            ServerSortMode.ZToA => Servers
+                .OrderByDescending(s => s.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ThenByDescending(s => s.Host, StringComparer.CurrentCultureIgnoreCase)
+                .ToList(),
+            _ => GetServersInCustomOrderView()
+        };
+
+        for (var targetIndex = 0; targetIndex < ordered.Count; targetIndex++)
+        {
+            var currentIndex = Servers.IndexOf(ordered[targetIndex]);
+            if (currentIndex >= 0 && currentIndex != targetIndex)
+                Servers.Move(currentIndex, targetIndex);
+        }
+    }
+
+    private List<ServerViewModel> GetServersInCustomOrderView()
+    {
+        var byId = Servers.ToDictionary(s => s.Id);
+        var usedIds = new HashSet<string>();
+        var ordered = new List<ServerViewModel>();
+
+        foreach (var id in _customOrderIds)
+        {
+            if (byId.TryGetValue(id, out var server))
+            {
+                ordered.Add(server);
+                usedIds.Add(id);
+            }
+        }
+
+        ordered.AddRange(Servers.Where(s => !usedIds.Contains(s.Id)));
+        return ordered;
+    }
+
+    private List<Server> GetServersInServiceOrder()
+    {
+        var byId = Servers.ToDictionary(s => s.Id);
+        var usedIds = new HashSet<string>();
+        var ordered = new List<Server>();
+
+        foreach (var id in _serviceOrderIds)
+        {
+            if (byId.TryGetValue(id, out var server))
+            {
+                ordered.Add(server.ToModel());
+                usedIds.Add(id);
+            }
+        }
+
+        ordered.AddRange(Servers.Where(s => !usedIds.Contains(s.Id)).Select(s => s.ToModel()));
+        return ordered;
+    }
+
+    private void RebuildCustomOrderFromCurrentView()
+    {
+        _customOrderIds.Clear();
+        _customOrderIds.AddRange(Servers.Select(s => s.Id));
+    }
+
+    private void NotifySortModeChanged()
+    {
+        OnPropertyChanged(nameof(NameSortMode));
+        OnPropertyChanged(nameof(NameSortModeLabel));
+        OnPropertyChanged(nameof(IsNameSortModeLabelVisible));
     }
 
     private static void ShowMessage(string messageKey, string captionKey, MessageBoxImage image) =>

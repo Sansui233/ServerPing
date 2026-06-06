@@ -155,11 +155,7 @@ public partial class MainWindow : Window
 
     private void RefreshColumnHeaders()
     {
-        NameColumn.Header = LocalizationService.Get("Main.Name");
-        AvailabilityColumn.Header = LocalizationService.Get("Main.Availability");
-        LastCheckColumn.Header = LocalizationService.Get("Main.LastCheck");
-        HostColumnHeaderText.Text = LocalizationService.Get("Main.Host");
-        ActionsColumn.Header = LocalizationService.Get("Main.Actions");
+        ServerList.RefreshLocalizedText();
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -172,38 +168,4 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void IdentityTextBox_GotFocus(object sender, RoutedEventArgs e)
-    {
-        if (sender is TextBox { DataContext: ServerViewModel server })
-            server.IsEditingIdentity = true;
-    }
-
-    private async void IdentityTextBox_LostFocus(object sender, RoutedEventArgs e)
-    {
-        if (sender is not TextBox { DataContext: ServerViewModel server } textBox || !server.IsEditingIdentity)
-            return;
-
-        await CommitIdentityEditAsync(textBox, moveFocus: false);
-    }
-
-    private async void IdentityTextBox_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter || sender is not TextBox textBox)
-            return;
-
-        e.Handled = true;
-        await CommitIdentityEditAsync(textBox, moveFocus: true);
-    }
-
-    private async Task CommitIdentityEditAsync(TextBox textBox, bool moveFocus)
-    {
-        if (textBox.DataContext is not ServerViewModel server)
-            return;
-
-        server.IsEditingIdentity = false;
-        var saved = await ViewModel.SaveServerAsync(server);
-
-        if (moveFocus && saved)
-            textBox.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
-    }
 }

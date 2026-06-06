@@ -28,6 +28,8 @@
     <sys:String x:Key="Main.Minimize">Свернуть</sys:String>
     <sys:String x:Key="Main.Close">Закрыть</sys:String>
     <sys:String x:Key="Main.Name">Имя</sys:String>
+    <sys:String x:Key="Main.SortAtoZ">A-Z</sys:String>
+    <sys:String x:Key="Main.SortZtoA">Z-A</sys:String>
     <sys:String x:Key="Main.Availability">Доступность</sys:String>
     <sys:String x:Key="Main.LastCheck">Последняя проверка</sys:String>
     <sys:String x:Key="Main.Host">Хост / IP</sys:String>

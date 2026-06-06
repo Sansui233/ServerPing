@@ -11,6 +11,7 @@ public class PingService : IDisposable
     private readonly Dictionary<string, MinuteRingBuffer> _minuteBuffers = new();
     private readonly Dictionary<string, DateTime> _lastSuccessfulPingTimes = new();
     private readonly HashSet<string> _activePings = new();
+    private readonly List<string> _serverOrder = [];
     private readonly StatsFileManager _statsFileManager;
     private readonly object _lock = new();
     private MonitoringSettings _settings = new();
@@ -36,9 +37,13 @@ public class PingService : IDisposable
             }
 
             var serverIds = new List<string>();
+            _serverOrder.Clear();
             foreach (var server in servers)
             {
                 _servers[server.Id] = server;
+                if (!_serverOrder.Contains(server.Id))
+                    _serverOrder.Add(server.Id);
+
                 _minuteBuffers.TryAdd(server.Id, new MinuteRingBuffer());
                 serverIds.Add(server.Id);
 
@@ -64,10 +69,15 @@ public class PingService : IDisposable
             {
                 StopPinging(id);
                 _servers.Remove(id);
+                _serverOrder.Remove(id);
                 _minuteBuffers.Remove(id);
                 _lastSuccessfulPingTimes.Remove(id);
                 _statsFileManager.RemoveServer(id);
             }
+
+            _serverOrder.Clear();
+            foreach (var id in servers.Select(s => s.Id).Distinct())
+                _serverOrder.Add(id);
 
             foreach (var server in servers)
             {
@@ -237,7 +247,13 @@ public class PingService : IDisposable
     {
         lock (_lock)
         {
-            return _servers.Values.ToList();
+            var ordered = _serverOrder
+                .Where(_servers.ContainsKey)
+                .Select(id => _servers[id])
+                .ToList();
+
+            ordered.AddRange(_servers.Where(s => !_serverOrder.Contains(s.Key)).Select(s => s.Value));
+            return ordered;
         }
     }
 
@@ -293,7 +309,11 @@ public class PingService : IDisposable
     {
         lock (_lock)
         {
-            return _servers.Keys.Select(id => new ServerStats
+            var ids = _serverOrder
+                .Where(_servers.ContainsKey)
+                .Concat(_servers.Keys.Where(id => !_serverOrder.Contains(id)));
+
+            return ids.Select(id => new ServerStats
             {
                 ServerId = id,
                 LastHour = _statsFileManager.GetLastHourStats(id),

@@ -54,16 +54,20 @@ ServerPing.sln
 | File | Purpose |
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
-| `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless window with custom title bar. DataGrid with inline host editing, stats columns, action buttons. Settings (⚙) button opens `SettingsDialog`. |
+| `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless shell window with custom title bar, tray toggle positioning, hibernation timer, and Settings (⚙) dialog launch. The server list UI is hosted through `Views/ServerList/ServerListView`. |
+| `Views/ServerList/ServerListView.xaml` / `Views/ServerList/ServerListView.xaml.cs` | Server list component. Owns the DataGrid, inline name/host editing events, stats columns, host visibility button, name sort header, and drag/drop insertion indicator. |
 | `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
 | `Styles/ScrollBar.xaml` | Theme-aware global ScrollBar control template merged by `App.xaml`. |
+| `Models/GuiState.cs` | GUI-only persisted state root, currently name sort mode plus custom server order IDs. |
+| `Models/ServerSortMode.cs` | Enum for server list sorting: Auto, AToZ, ZToA. |
 | `ViewModels/ViewModelBase.cs` | `INotifyPropertyChanged` base with `SetProperty<T>`. |
 | `ViewModels/RelayCommand.cs` | `ICommand` implementation supporting async delegates and CanExecute. |
-| `ViewModels/MainViewModel.cs` | MVVM brain. 3-second `DispatcherTimer` refresh loop. All IPC calls routed through `IpcClient`. |
+| `ViewModels/MainViewModel.cs` | MVVM brain. 3-second `DispatcherTimer` refresh loop, GUI sort state coordination, and all IPC calls routed through `IpcClient`. |
 | `ViewModels/ServerViewModel.cs` | Per-row ViewModel. Wraps `Server` + `ServerStats`. Computed properties: `StatusText`, `LastPingTimeText`, `LastHourStatsText`, `LastHourAvailabilityText`. |
 | `ViewModels/SshProfileViewModel.cs` | Wraps `SshProfile` with `IsSelected` for import dialog binding. |
+| `Services/GuiStateStore.cs` | Read/write `%APPDATA%\ServerPing\gui-state.json` for GUI-only state. Failures are treated as non-critical. |
 | `Services/IpcClient.cs` | Named Pipe client. 3-second connect timeout. All methods async. |
 | `Services/ThemeMessageBox.cs` | Central API for showing `ThemedMessageBox` with localized text and active-window ownership. |
 | `Services/WindowsTerminalParser.cs` | Parses `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState/settings.json`. Extracts SSH profiles via regex. |
@@ -97,6 +101,7 @@ Named Pipe `\\.\pipe\ServerPing`, JSON, one request/response per connection:
 - Format: `ServerConfiguration { Servers: List<Server>, Settings: MonitoringSettings }`
 - Written by Service (via IpcServer handlers on every mutation). Read on startup.
 - GUI never reads the file directly — always goes through IPC.
+- GUI-only state: `%APPDATA%\ServerPing\gui-state.json`, written by the GUI through `GuiStateStore`. It stores presentation preferences such as server list name sort mode and custom server order IDs, separate from the service-owned server configuration.
 
 Windows Terminal settings location:
 - `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_*/LocalState/settings.json`
@@ -106,6 +111,7 @@ Windows Terminal settings location:
 - **Dual-process:** Service stays resident for monitoring; GUI is launched on demand and exits fully. Keeps idle memory low.
 - **Single Named Pipe (one connection at a time):** Sufficient since only one GUI instance can run (Mutex-guarded). Avoids complexity of concurrent IPC.
 - **3-second GUI refresh:** `DispatcherTimer` on UI thread polls `GetServers` + `GetStats`. No push notifications from Service to GUI — acceptable latency.
+- **GUI-only ordering state:** Server configuration remains service-owned and IPC-backed. Server list custom order and sort mode are presentation state persisted by the GUI in `gui-state.json`, so drag/drop ordering does not rewrite server identity/configuration order.
 - **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
 - **Offline, sound, and tray alert state:** Each server enters `Offline` when its consecutive failures reach the user-configured threshold, and leaves `Offline` on a successful ping. Offline sound plays per server when it enters `Offline`. The tray alert icon is active whenever any enabled server is `Offline`. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
@@ -171,6 +177,7 @@ All core features complete:
 - ✅ Tray Pause/Resume monitoring toggle
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)
+- ✅ Server list name sorting (Auto / A-Z / Z-A) with GUI-persisted custom drag/drop order
 - ✅ 1h / 24h ping statistics with availability %
 - ✅ Settings dialog (ping interval, failure threshold, silent startup)
 - ✅ Windows Terminal SSH Profile import

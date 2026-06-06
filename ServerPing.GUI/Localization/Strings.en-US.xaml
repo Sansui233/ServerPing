@@ -28,6 +28,8 @@
     <sys:String x:Key="Main.Minimize">Minimize</sys:String>
     <sys:String x:Key="Main.Close">Close</sys:String>
     <sys:String x:Key="Main.Name">Name</sys:String>
+    <sys:String x:Key="Main.SortAtoZ">A to Z</sys:String>
+    <sys:String x:Key="Main.SortZtoA">Z to A</sys:String>
     <sys:String x:Key="Main.Availability">Availability</sys:String>
     <sys:String x:Key="Main.LastCheck">Last check</sys:String>
     <sys:String x:Key="Main.Host">Host / IP</sys:String>

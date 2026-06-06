@@ -28,6 +28,8 @@
     <sys:String x:Key="Main.Minimize">最小化</sys:String>
     <sys:String x:Key="Main.Close">关闭</sys:String>
     <sys:String x:Key="Main.Name">名称</sys:String>
+    <sys:String x:Key="Main.SortAtoZ">A-Z</sys:String>
+    <sys:String x:Key="Main.SortZtoA">Z-A</sys:String>
     <sys:String x:Key="Main.Availability">可用率</sys:String>
     <sys:String x:Key="Main.LastCheck">最后检查</sys:String>
     <sys:String x:Key="Main.Host">Host / IP</sys:String>
