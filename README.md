@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/Screenshot.jpg" alt="Server ping screenshot" width="860">
+  <img src="docs/media/Screenshot.png" alt="Server ping screenshot" width="860">
 </p>
 
 ## Features

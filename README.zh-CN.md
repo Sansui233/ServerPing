@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/Screenshot.jpg" alt="Server ping 截图" width="860">
+  <img src="docs/media/Screenshot.png" alt="Server ping 截图" width="860">
 </p>
 
 ## 特点
