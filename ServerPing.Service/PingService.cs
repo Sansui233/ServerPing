@@ -7,10 +7,12 @@ namespace ServerPing.Service;
 public class PingService : IDisposable
 {
     private readonly Dictionary<string, System.Threading.Timer> _timers = new();
+    private readonly Dictionary<string, Ping> _pingers = new();
     private readonly Dictionary<string, Server> _servers = new();
     private readonly Dictionary<string, MinuteRingBuffer> _minuteBuffers = new();
     private readonly Dictionary<string, DateTime> _lastSuccessfulPingTimes = new();
     private readonly HashSet<string> _activePings = new();
+    private readonly HashSet<string> _pendingPingerDisposals = new();
     private readonly List<string> _serverOrder = [];
     private readonly StatsFileManager _statsFileManager;
     private readonly LocalNetworkMonitor _localNetworkMonitor;
@@ -77,7 +79,7 @@ public class PingService : IDisposable
             var toRemove = existingIds.Except(newIds).ToList();
             foreach (var id in toRemove)
             {
-                StopPinging(id);
+                StopPinging(id, disposePinger: true);
                 _servers.Remove(id);
                 _serverOrder.Remove(id);
                 _minuteBuffers.Remove(id);
@@ -101,7 +103,7 @@ public class PingService : IDisposable
                     if (server.IsEnabled && !wasEnabled)
                         serversToStart.Add(existing);
                     else if (!server.IsEnabled && wasEnabled)
-                        StopPinging(server.Id);
+                        StopPinging(server.Id, disposePinger: true);
                 }
                 else
                 {
@@ -126,6 +128,7 @@ public class PingService : IDisposable
     private void StartPinging(Server server)
     {
         StopPinging(server.Id);
+        _pendingPingerDisposals.Remove(server.Id);
 
         var timer = new System.Threading.Timer(
             async _ => await PingServerAsync(server.Id),
@@ -137,12 +140,17 @@ public class PingService : IDisposable
         _timers[server.Id] = timer;
     }
 
-    private void StopPinging(string serverId)
+    private void StopPinging(string serverId, bool disposePinger = false)
     {
         if (_timers.TryGetValue(serverId, out var timer))
         {
             timer.Dispose();
             _timers.Remove(serverId);
+        }
+
+        if (disposePinger)
+        {
+            DisposePingerWhenIdle(serverId);
         }
     }
 
@@ -156,7 +164,15 @@ public class PingService : IDisposable
             if (!_localNetworkMonitor.IsAvailable)
                 return;
 
-            using var pinger = new Ping();
+            Ping pinger;
+            lock (_lock)
+            {
+                if (!_servers.ContainsKey(serverId))
+                    return;
+
+                pinger = GetOrCreatePinger(serverId);
+            }
+
             var reply = await pinger.SendPingAsync(server.Host, 3000);
 
             lock (_lock)
@@ -237,6 +253,36 @@ public class PingService : IDisposable
         }
     }
 
+    private Ping GetOrCreatePinger(string serverId)
+    {
+        if (_pingers.TryGetValue(serverId, out var pinger))
+            return pinger;
+
+        pinger = new Ping();
+        _pingers[serverId] = pinger;
+        return pinger;
+    }
+
+    private void DisposePinger(string serverId)
+    {
+        if (_pingers.Remove(serverId, out var pinger))
+        {
+            pinger.Dispose();
+        }
+    }
+
+    private void DisposePingerWhenIdle(string serverId)
+    {
+        if (_activePings.Contains(serverId))
+        {
+            _pendingPingerDisposals.Add(serverId);
+            return;
+        }
+
+        _pendingPingerDisposals.Remove(serverId);
+        DisposePinger(serverId);
+    }
+
     private bool TryBeginPing(string serverId, [NotNullWhen(true)] out Server? server)
     {
         server = null;
@@ -258,6 +304,11 @@ public class PingService : IDisposable
         lock (_lock)
         {
             _activePings.Remove(serverId);
+
+            if (_pendingPingerDisposals.Remove(serverId))
+            {
+                DisposePinger(serverId);
+            }
         }
     }
 
@@ -380,6 +431,13 @@ public class PingService : IDisposable
                 timer.Dispose();
             }
             _timers.Clear();
+
+            foreach (var pinger in _pingers.Values)
+            {
+                pinger.Dispose();
+            }
+            _pingers.Clear();
+            _pendingPingerDisposals.Clear();
         }
 
         _statsFileManager.Dispose();
