@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ServerPing.GUI.ViewModels"
         xmlns:serverList="clr-namespace:ServerPing.GUI.Views.ServerList"
+        xmlns:statsOverlay="clr-namespace:ServerPing.GUI.Views.ServerStatsOverlay"
         Title="ServerPing"
         MinHeight="310" MaxHeight="560" MaxWidth="600"
         SizeToContent="Height"
@@ -137,7 +138,13 @@
             </Grid>
             </Border>
 
-            <serverList:ServerListView Grid.Row="1" x:Name="ServerList" />
+            <Grid Grid.Row="1">
+                <serverList:ServerListView x:Name="ServerList" />
+                <statsOverlay:ServerStatsOverlayView DataContext="{Binding SelectedStatsOverlay}"
+                                                     Visibility="{Binding DataContext.IsStatsOverlayVisible,
+                                                                          RelativeSource={RelativeSource AncestorType=Window},
+                                                                          Converter={StaticResource BoolToVis}}" />
+            </Grid>
 
         </Grid>
     </Border>

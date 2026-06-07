@@ -20,6 +20,7 @@
                   AlternationCount="2"
                   Margin="0"
                   PreviewMouseLeftButtonDown="ServerDataGrid_PreviewMouseLeftButtonDown"
+                  MouseLeftButtonUp="ServerDataGrid_MouseLeftButtonUp"
                   MouseMove="ServerDataGrid_MouseMove"
                   DragOver="ServerDataGrid_DragOver"
                   DragLeave="ServerDataGrid_DragLeave"

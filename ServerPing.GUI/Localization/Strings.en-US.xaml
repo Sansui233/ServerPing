@@ -70,6 +70,11 @@
     <sys:String x:Key="Status.Tooltip">Status: {0}</sys:String>
     <sys:String x:Key="Server.NewServer">New server</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">Success: {0} Failure: {1}</sys:String>
+    <sys:String x:Key="StatsOverlay.Back">Back</sys:String>
+    <sys:String x:Key="StatsOverlay.CellTooltip">{0} {1} Success: {2} Failure: {3}</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalSuccess">Total success</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalFailure">Total failure</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalAvailability">Total availability</sys:String>
     <sys:String x:Key="Dialog.Error">Error</sys:String>
     <sys:String x:Key="Dialog.Info">Info</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">Invalid input</sys:String>

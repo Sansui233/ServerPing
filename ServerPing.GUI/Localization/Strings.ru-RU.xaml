@@ -70,6 +70,11 @@
     <sys:String x:Key="Status.Tooltip">Статус: {0}</sys:String>
     <sys:String x:Key="Server.NewServer">Новый сервер</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">Успешно: {0} Сбоев: {1}</sys:String>
+    <sys:String x:Key="StatsOverlay.Back">Назад</sys:String>
+    <sys:String x:Key="StatsOverlay.CellTooltip">{0} {1} Успешно: {2} Сбоев: {3}</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalSuccess">Всего успешно</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalFailure">Всего сбоев</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalAvailability">Общая доступность</sys:String>
     <sys:String x:Key="Dialog.Error">Ошибка</sys:String>
     <sys:String x:Key="Dialog.Info">Информация</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">Некорректный ввод</sys:String>

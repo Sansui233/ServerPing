@@ -25,6 +25,8 @@
             <SolidColorBrush x:Key="DangerBrush"               Color="#F87171" />
             <SolidColorBrush x:Key="ButtonBackgroundBrush"     Color="#252B34" />
             <SolidColorBrush x:Key="ButtonHoverBrush"          Color="#303846" />
+            <SolidColorBrush x:Key="OverlayHoverBrush"         Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="HeatmapEmptyCellBrush"     Color="#D8DEE7" />
             <SolidColorBrush x:Key="TextBoxBackgroundBrush"    Color="#141820" />
             <SolidColorBrush x:Key="TitleBarHoverBrush"        Color="#1EFFFFFF" />
             <SolidColorBrush x:Key="DataGridRowAltBrush"       Color="#171B21" />

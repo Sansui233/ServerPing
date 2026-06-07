@@ -7,6 +7,7 @@
   <ItemGroup>
     <None Remove="Assets\App.Ico\*.ico" />
     <Resource Include="Assets\App.Ico\*.ico" />
+    <Content Include="Assets\Icons\*.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

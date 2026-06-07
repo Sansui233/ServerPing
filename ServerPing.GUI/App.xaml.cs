@@ -96,6 +96,8 @@ public partial class App : Application
             Set("DangerBrush",               0xF8, 0x71, 0x71);
             Set("ButtonBackgroundBrush",     0x25, 0x2B, 0x34);
             Set("ButtonHoverBrush",          0x30, 0x38, 0x46);
+            SetA("OverlayHoverBrush",        0x12, 0xFF, 0xFF, 0xFF);
+            Set("HeatmapEmptyCellBrush",     0xD8, 0xDE, 0xE7);
             Set("TextBoxBackgroundBrush",    0x14, 0x18, 0x20);
             SetA("TitleBarHoverBrush",   0x1E, 0xFF, 0xFF, 0xFF);
             Set("DataGridRowAltBrush",       0x17, 0x1B, 0x21);
@@ -129,6 +131,8 @@ public partial class App : Application
             Set("DangerBrush",               0xEF, 0x44, 0x44);
             Set("ButtonBackgroundBrush",     0xE5, 0xE7, 0xEB);
             Set("ButtonHoverBrush",          0xD1, 0xD5, 0xDB);
+            Set("OverlayHoverBrush",         0xF3, 0xF4, 0xF6);
+            Set("HeatmapEmptyCellBrush",     0xE5, 0xE7, 0xEB);
             Set("TextBoxBackgroundBrush",    0xFF, 0xFF, 0xFF);
             SetA("TitleBarHoverBrush",   0x0D, 0x00, 0x00, 0x00);
             Set("DataGridRowAltBrush",       0xF9, 0xFA, 0xFB);

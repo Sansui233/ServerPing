@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using ServerPing.GUI.Models;
 using ServerPing.GUI.Services;
+using ServerPing.GUI.Views.ServerStatsOverlay;
 using ServerPing.Shared.Models;
 
 namespace ServerPing.GUI.ViewModels;
@@ -17,6 +18,8 @@ public class MainViewModel : ViewModelBase
     private readonly List<string> _customOrderIds = [];
     private readonly List<string> _serviceOrderIds = [];
     private ServerViewModel? _selectedServer;
+    private ServerViewModel? _selectedStatsServer;
+    private ServerStatsOverlayViewModel? _selectedStatsOverlay;
     private string _statusMessage = LocalizationService.Get("Status.Connecting");
     private bool _isConnected;
     private bool _canUndo;
@@ -32,6 +35,28 @@ public class MainViewModel : ViewModelBase
         get => _selectedServer;
         set => SetProperty(ref _selectedServer, value);
     }
+
+    public ServerViewModel? SelectedStatsServer
+    {
+        get => _selectedStatsServer;
+        private set => SetProperty(ref _selectedStatsServer, value);
+    }
+
+    public ServerStatsOverlayViewModel? SelectedStatsOverlay
+    {
+        get => _selectedStatsOverlay;
+        private set
+        {
+            if (_selectedStatsOverlay == value)
+                return;
+
+            _selectedStatsOverlay?.Dispose();
+            SetProperty(ref _selectedStatsOverlay, value);
+            OnPropertyChanged(nameof(IsStatsOverlayVisible));
+        }
+    }
+
+    public bool IsStatsOverlayVisible => SelectedStatsOverlay != null;
 
     public string StatusMessage
     {
@@ -84,6 +109,8 @@ public class MainViewModel : ViewModelBase
     public RelayCommand ImportFromTerminalCommand { get; }
     public RelayCommand UndoDeleteCommand { get; }
     public RelayCommand ToggleHostVisibilityCommand { get; }
+    public RelayCommand OpenStatsOverlayCommand { get; }
+    public RelayCommand CloseStatsOverlayCommand { get; }
 
     public MainViewModel()
     {
@@ -95,6 +122,8 @@ public class MainViewModel : ViewModelBase
         ImportFromTerminalCommand = new RelayCommand(ImportFromTerminal);
         UndoDeleteCommand = new RelayCommand(async () => await UndoDeleteAsync(), () => CanUndo);
         ToggleHostVisibilityCommand = new RelayCommand(() => IsHostVisible = !IsHostVisible);
+        OpenStatsOverlayCommand = new RelayCommand(OpenStatsOverlay, p => p is ServerViewModel);
+        CloseStatsOverlayCommand = new RelayCommand(CloseStatsOverlay);
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _refreshTimer.Tick += async (s, e) => await RefreshServersAsync();
@@ -114,6 +143,7 @@ public class MainViewModel : ViewModelBase
     {
         _refreshTimer.Stop();
         _undoTimer.Stop();
+        SelectedStatsOverlay = null;
     }
 
     private async Task RefreshServersAsync()
@@ -135,7 +165,11 @@ public class MainViewModel : ViewModelBase
             var serverIds = servers.Select(s => s.Id).ToHashSet();
             var toRemove = Servers.Where(s => !serverIds.Contains(s.Id)).ToList();
             foreach (var s in toRemove)
+            {
+                if (SelectedStatsServer?.Id == s.Id)
+                    CloseStatsOverlay();
                 Servers.Remove(s);
+            }
 
             if (!Servers.Any(s => s.IsEditingIdentity))
                 ApplyDisplayOrder();
@@ -145,6 +179,7 @@ public class MainViewModel : ViewModelBase
             IsConnected = true;
 
             await RefreshStatsAsync();
+            UpdateSelectedStatsOverlay();
         }
         catch
         {
@@ -182,6 +217,8 @@ public class MainViewModel : ViewModelBase
 
         if (await _ipcClient.RemoveServerAsync(server.Id))
         {
+            if (SelectedStatsServer?.Id == server.Id)
+                CloseStatsOverlay();
             Servers.Remove(server);
             _customOrderIds.Remove(server.Id);
             _serviceOrderIds.Remove(server.Id);
@@ -386,6 +423,38 @@ public class MainViewModel : ViewModelBase
         NotifySortModeChanged();
         foreach (var server in Servers)
             server.RefreshLocalizedText();
+        SelectedStatsOverlay?.RefreshLocalizedText();
+    }
+
+    private void OpenStatsOverlay(object? parameter)
+    {
+        if (parameter is not ServerViewModel server || server.IsPlaceholderHost)
+            return;
+
+        SelectedStatsServer = server;
+        SelectedStatsOverlay = new ServerStatsOverlayViewModel(server, CloseStatsOverlay);
+    }
+
+    private void CloseStatsOverlay()
+    {
+        SelectedStatsServer = null;
+        SelectedStatsOverlay = null;
+    }
+
+    private void UpdateSelectedStatsOverlay()
+    {
+        if (SelectedStatsServer == null || SelectedStatsOverlay == null)
+            return;
+
+        var current = Servers.FirstOrDefault(s => s.Id == SelectedStatsServer.Id);
+        if (current == null)
+        {
+            CloseStatsOverlay();
+            return;
+        }
+
+        SelectedStatsServer = current;
+        SelectedStatsOverlay.UpdateLiveServer(current);
     }
 
     private void LoadGuiState()

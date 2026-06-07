@@ -126,6 +126,33 @@ public partial class ServerListView : UserControl
         _draggedServer = null;
     }
 
+    private void ServerDataGrid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (ViewModel == null || _dragStartPoint == null || _draggedServer == null)
+            return;
+
+        try
+        {
+            var source = e.OriginalSource as DependencyObject;
+            if (source == null
+                || FindAncestor<Button>(source) != null
+                || FindAncestor<DataGridColumnHeader>(source) != null
+                || FindAncestor<TextBox>(source) != null)
+            {
+                return;
+            }
+
+            var row = FindAncestor<DataGridRow>(source);
+            if (row?.Item is ServerViewModel server && ReferenceEquals(server, _draggedServer))
+                ViewModel.OpenStatsOverlayCommand.Execute(server);
+        }
+        finally
+        {
+            _dragStartPoint = null;
+            _draggedServer = null;
+        }
+    }
+
     private void ServerDataGrid_DragOver(object sender, DragEventArgs e)
     {
         if (!e.Data.GetDataPresent(typeof(ServerViewModel)))

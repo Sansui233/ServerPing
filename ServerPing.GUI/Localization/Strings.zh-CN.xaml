@@ -70,6 +70,11 @@
     <sys:String x:Key="Status.Tooltip">状态：{0}</sys:String>
     <sys:String x:Key="Server.NewServer">新服务器</sys:String>
     <sys:String x:Key="Stats.MinuteTooltip">成功：{0} 失败：{1}</sys:String>
+    <sys:String x:Key="StatsOverlay.Back">返回</sys:String>
+    <sys:String x:Key="StatsOverlay.CellTooltip">{0} {1} 成功：{2} 失败：{3}</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalSuccess">总成功次数</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalFailure">总失败次数</sys:String>
+    <sys:String x:Key="StatsOverlay.TotalAvailability">总可用率</sys:String>
     <sys:String x:Key="Dialog.Error">错误</sys:String>
     <sys:String x:Key="Dialog.Info">提示</sys:String>
     <sys:String x:Key="Dialog.InvalidInput">输入无效</sys:String>

@@ -54,8 +54,12 @@ ServerPing.sln
 | File | Purpose |
 |------|---------|
 | `App.xaml` / `App.xaml.cs` | Single-instance Mutex guard. Theme resource dictionary (runtime light/dark brushes, shared button/datagrid/textbox styles, CornerRadius=4). |
-| `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless shell window with custom title bar, tray toggle positioning, hibernation timer, and Settings (⚙) dialog launch. The server list UI is hosted through `Views/ServerList/ServerListView`. |
-| `Views/ServerList/ServerListView.xaml` / `Views/ServerList/ServerListView.xaml.cs` | Server list component. Owns the DataGrid, inline name/host editing events, stats columns, latency display, host visibility button, name sort header, and drag/drop insertion indicator. |
+| `Assets/Icons.xaml` | WPF geometry icon resource dictionary merged by `App.xaml`. Use for inline `Path` icons in XAML. |
+| `Assets/Icons/*.svg` | Source SVG icon assets, including Lucide downloads such as `arrow-left.svg`. SVG files belong here, not in a separate `Lucide` directory. `ServerPing.GUI.csproj` packages this folder as content for build/publish. |
+| `Assets/App.Ico/*.ico` | Application and tray icon resources. Included as WPF resources and application icon inputs. |
+| `MainWindow.xaml` / `MainWindow.xaml.cs` | Frameless shell window with custom title bar, tray toggle positioning, hibernation timer, and Settings (⚙) dialog launch. The server list UI is hosted through `Views/ServerList/ServerListView`, with `Views/ServerStatsOverlay/ServerStatsOverlayView` shown on demand over the content area. |
+| `Views/ServerList/ServerListView.xaml` / `Views/ServerList/ServerListView.xaml.cs` | Server list component. Owns the DataGrid, inline name/host editing events, stats columns, latency display, host visibility button, name sort header, row-click stats overlay launch, and drag/drop insertion indicator. |
+| `Views/ServerStatsOverlay/ServerStatsOverlayView.xaml` / `Views/ServerStatsOverlay/ServerStatsOverlayView.xaml.cs` / `Views/ServerStatsOverlay/ServerStatsOverlayViewModel.cs` | On-demand per-server stability overlay. Reuses current ServerList availability/minute/latency data and reads `%APPDATA%\ServerPing\stats\{serverId}.json` once per second only while visible to render the 7-day hourly heatmap and totals. |
 | `Dialogs/SettingsDialog.xaml` / `Dialogs/SettingsDialog.xaml.cs` | Input validation for PingIntervalSeconds / FailureThreshold / SilentStartup and offline notification sound setting. Test Notification and notification sound buttons. Calls `MainViewModel.SaveSettingsAsync`. |
 | `Dialogs/ImportDialog.xaml` / `Dialogs/ImportDialog.xaml.cs` | SSH profile import: filters already-added hosts, Select All / Select None. |
 | `Dialogs/ThemedMessageBox.xaml` / `Dialogs/ThemedMessageBox.xaml.cs` | Theme-aware replacement for WPF `MessageBox` used by validation and information dialogs. |
@@ -101,6 +105,7 @@ Named Pipe `\\.\pipe\ServerPing`, JSON, one request/response per connection:
 - Format: `ServerConfiguration { Servers: List<Server>, Settings: MonitoringSettings }`
 - Written by Service (via IpcServer handlers on every mutation). Read on startup.
 - GUI never reads the file directly — always goes through IPC.
+- Hourly disk statistics: `%APPDATA%\ServerPing\stats\{serverId}.json`, written by `StatsFileManager` as `Dictionary<string, HourAggregate>` with keys like `yyyy-MM-dd-HH-HH` and values `{ Success, Failure }`. Entries older than 7 days are pruned. The GUI stats overlay reads this file directly on demand.
 - GUI-only state: `%APPDATA%\ServerPing\gui-state.json`, written by the GUI through `GuiStateStore`. It stores presentation preferences such as server list name sort mode and custom server order IDs, separate from the service-owned server configuration.
 
 Windows Terminal settings location:
@@ -180,6 +185,7 @@ All core features complete:
 - ✅ Server list name sorting (Auto / A-Z / Z-A) with GUI-persisted custom drag/drop order
 - ✅ Server list current latency display with threshold-based coloring
 - ✅ 1h / 24h ping statistics with availability %
+- ✅ On-demand per-server stability overlay with 7-day hourly disk-statistics heatmap
 - ✅ Settings dialog (ping interval, failure threshold, silent startup)
 - ✅ Windows Terminal SSH Profile import
 - ✅ GUI single-instance protection (Mutex)
@@ -192,6 +198,7 @@ All core features complete:
 - **Resource Usage:** Service must stay under 20MB memory when GUI is closed
 - **Process Isolation:** GUI must fully exit when closed; system tray remains via Service
 - **UI Localization:** New or changed user-facing GUI text, tooltips, validation messages, and dialog content must use the existing localization flow (`LocalizationService` or `DynamicResource`) and update all language resource dictionaries under `ServerPing.GUI/Localization/`. Text that does not reliably refresh through `DynamicResource` during language changes, especially `DataGridColumn.Header`, must also be updated in the relevant `RefreshLocalizedText()` path.
+- **GUI Icons:** Put reusable WPF path geometries in `ServerPing.GUI/Assets/Icons.xaml`. Put downloaded/source SVG files in `ServerPing.GUI/Assets/Icons/` so `ServerPing.GUI.csproj` includes them in build and publish output. Do not create parallel icon folders such as `Assets/Lucide`.
 - **Do Not Build** for validation modifications.
 
 You Must update AGENTS.md file to track this repo's file structure, and build methods, whenever the architecture ,status, or test/build methods changes.
