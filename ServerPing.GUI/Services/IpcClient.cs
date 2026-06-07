@@ -134,6 +134,22 @@ public class IpcClient
         return [];
     }
 
+    public async Task<ServiceStatus?> GetStatusAsync()
+    {
+        var response = await SendMessageAsync(new IpcMessage
+        {
+            Type = MessageType.GetStatus
+        });
+
+        if (response.Success && response.Data != null)
+        {
+            var json = JsonSerializer.Serialize(response.Data);
+            return JsonSerializer.Deserialize<ServiceStatus>(json);
+        }
+
+        return null;
+    }
+
     private async Task<IpcResponse> SendMessageAsync(IpcMessage message)
     {
         try

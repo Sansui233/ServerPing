@@ -13,7 +13,8 @@ var config = ConfigurationManager.Load();
 Console.WriteLine($"已加载 {config.Servers.Count} 个服务器配置");
 
 var statsFileManager = new StatsFileManager();
-var pingService = new PingService(statsFileManager);
+var localNetworkMonitor = new LocalNetworkMonitor();
+var pingService = new PingService(statsFileManager, localNetworkMonitor);
 var notificationService = new NotificationService();
 var startupRegistrationService = new StartupRegistrationService();
 startupRegistrationService.Apply(config.Settings.LaunchAtStartup);
@@ -49,6 +50,11 @@ pingService.StatusChanged += (sender, e) =>
 pingService.SettingsChanged += (sender, e) => RefreshTrayStatus();
 pingService.ServersChanged += (sender, e) => RefreshTrayStatus();
 pingService.PingResultRecorded += (sender, e) => RefreshTrayStatus();
+localNetworkMonitor.StatusChanged += (sender, e) =>
+{
+    Console.WriteLine($"本地网络状态: {pingService.GetLocalNetworkStatus()}");
+    RefreshTrayStatus();
+};
 
 trayService.OpenGuiRequested += (sender, e) => guiManager.LaunchGui();
 trayService.ToggleGuiRequested += async (s, pos) => await guiManager.ToggleGui(pos.X, pos.Y);

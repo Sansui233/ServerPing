@@ -13,6 +13,7 @@ public class PingService : IDisposable
     private readonly HashSet<string> _activePings = new();
     private readonly List<string> _serverOrder = [];
     private readonly StatsFileManager _statsFileManager;
+    private readonly LocalNetworkMonitor _localNetworkMonitor;
     private readonly object _lock = new();
     private MonitoringSettings _settings = new();
     private bool _isPaused;
@@ -22,9 +23,10 @@ public class PingService : IDisposable
     public event EventHandler? ServersChanged;
     public event EventHandler? PingResultRecorded;
 
-    public PingService(StatsFileManager statsFileManager)
+    public PingService(StatsFileManager statsFileManager, LocalNetworkMonitor localNetworkMonitor)
     {
         _statsFileManager = statsFileManager;
+        _localNetworkMonitor = localNetworkMonitor;
     }
 
     public void Start(List<Server> servers, MonitoringSettings? settings = null)
@@ -136,6 +138,9 @@ public class PingService : IDisposable
 
         try
         {
+            if (!_localNetworkMonitor.Refresh())
+                return;
+
             using var pinger = new Ping();
             var reply = await pinger.SendPingAsync(server.Host, 3000);
 
@@ -267,6 +272,8 @@ public class PingService : IDisposable
             return _settings.Clone();
         }
     }
+
+    public LocalNetworkStatus GetLocalNetworkStatus() => _localNetworkMonitor.Status;
 
     public void UpdateSettings(MonitoringSettings settings)
     {

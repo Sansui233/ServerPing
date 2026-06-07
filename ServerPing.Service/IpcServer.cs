@@ -165,12 +165,18 @@ public class IpcServer : IDisposable
 
                 case MessageType.GetStatus:
                     var statusServers = _pingService.GetServers();
-                    var onlineCount = statusServers.Count(s => s.Status == ServerStatus.Online);
+                    var enabledServers = statusServers.Where(s => s.IsEnabled).ToList();
+                    var onlineCount = enabledServers.Count(s => s.Status == ServerStatus.Online);
 
                     return new IpcResponse
                     {
                         Success = true,
-                        Data = new { OnlineCount = onlineCount, TotalCount = statusServers.Count }
+                        Data = new ServiceStatus
+                        {
+                            OnlineCount = onlineCount,
+                            TotalCount = enabledServers.Count,
+                            LocalNetworkStatus = _pingService.GetLocalNetworkStatus()
+                        }
                     };
 
                 case MessageType.GetSettings:

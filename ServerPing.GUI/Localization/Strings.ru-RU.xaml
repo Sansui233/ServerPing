@@ -62,6 +62,7 @@
     <sys:String x:Key="Validation.HibernateDuration">Длительность сна окна должна быть от {0} до {1} сек.</sys:String>
     <sys:String x:Key="Status.Connecting">Подключение к службе...</sys:String>
     <sys:String x:Key="Status.Connected">Подключено — {0}/{1} онлайн</sys:String>
+    <sys:String x:Key="Status.LocalNetworkUnavailable">Нет локальной сети</sys:String>
     <sys:String x:Key="Status.ServiceUnavailable">Не удается подключиться к службе. Убедитесь, что ServerPing Service запущена.</sys:String>
     <sys:String x:Key="Status.Saved">Сохранено: {0}</sys:String>
     <sys:String x:Key="Status.Online">Онлайн</sys:String>

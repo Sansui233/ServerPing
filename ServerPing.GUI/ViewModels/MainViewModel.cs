@@ -22,6 +22,9 @@ public class MainViewModel : ViewModelBase
     private ServerStatsOverlayViewModel? _selectedStatsOverlay;
     private string _statusMessage = LocalizationService.Get("Status.Connecting");
     private bool _isConnected;
+    private int _lastOnlineCount;
+    private int _lastTotalCount;
+    private LocalNetworkStatus _lastLocalNetworkStatus = LocalNetworkStatus.Unknown;
     private bool _canUndo;
     private bool _isHostVisible = true;
     private ServerSortMode _nameSortMode = ServerSortMode.Auto;
@@ -174,9 +177,16 @@ public class MainViewModel : ViewModelBase
             if (!Servers.Any(s => s.IsEditingIdentity))
                 ApplyDisplayOrder();
 
-            var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
-            StatusMessage = LocalizationService.Format("Status.Connected", onlineCount, servers.Count);
+            var status = await _ipcClient.GetStatusAsync()
+                ?? new ServiceStatus
+                {
+                    OnlineCount = servers.Count(s => s.IsEnabled && s.Status == ServerStatus.Online),
+                    TotalCount = servers.Count(s => s.IsEnabled),
+                    LocalNetworkStatus = LocalNetworkStatus.Unknown
+                };
+
             IsConnected = true;
+            UpdateStatusMessage(status);
 
             await RefreshStatsAsync();
             UpdateSelectedStatsOverlay();
@@ -420,10 +430,29 @@ public class MainViewModel : ViewModelBase
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(HostVisibilityToolTip));
+        RefreshStatusMessageText();
         NotifySortModeChanged();
         foreach (var server in Servers)
             server.RefreshLocalizedText();
         SelectedStatsOverlay?.RefreshLocalizedText();
+    }
+
+    private void UpdateStatusMessage(ServiceStatus status)
+    {
+        _lastOnlineCount = status.OnlineCount;
+        _lastTotalCount = status.TotalCount;
+        _lastLocalNetworkStatus = status.LocalNetworkStatus;
+        RefreshStatusMessageText();
+    }
+
+    private void RefreshStatusMessageText()
+    {
+        if (!IsConnected)
+            return;
+
+        StatusMessage = _lastLocalNetworkStatus == LocalNetworkStatus.NoNetwork
+            ? LocalizationService.Get("Status.LocalNetworkUnavailable")
+            : LocalizationService.Format("Status.Connected", _lastOnlineCount, _lastTotalCount);
     }
 
     private void OpenStatsOverlay(object? parameter)
