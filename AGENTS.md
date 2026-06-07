@@ -46,7 +46,7 @@ ServerPing.sln
 |------|---------|
 | `Program.cs` | Entry point. Initializes all services, wires events, conditionally launches GUI, calls `Application.Run()` for the WinForms message loop. |
 | `PingService.cs` | Ping engine. Per-server `System.Threading.Timer` at configurable interval. Lock-protected state. Updates status, last check time, current latency, rolling stats, and change events. Exposes `Pause()`/`Resume()`. Offline/tray-related state details are documented in `DOCS/tray-state-machine.md`. |
-| `LocalNetworkMonitor.cs` | Service-side cached local network detector. It uses a 10-second timer only when servers exist and all are disabled. With enabled servers it stops detection and reports `Unknown`; with no servers it reports `Disabled`, so normal ping loops do not enumerate network interfaces. |
+| `LocalNetworkMonitor.cs` | Service-side cached local network detector. It uses a 10-second timer only when enabled servers all become `Offline`. With no servers or no enabled servers it reports `Disabled`; otherwise it reports `Unknown`, so normal ping loops do not enumerate network interfaces. |
 | `NotificationService.cs` | Windows Toast via `Microsoft.Toolkit.Uwp.Notifications`. Three notification types: offline, online, test. Offline alert sound can be played explicitly by service logic with bundled `offline.wav` and fallback. |
 | `TrayService.cs` | `NotifyIcon` + `ContextMenuStrip`. Left-click opens GUI. Right-click shows live server list with 1h availability %. Alert icon behavior is summarized in Key Design Decisions and detailed in `DOCS/tray-state-machine.md`. |
 | `IpcServer.cs` | Named Pipe server on `\\.\pipe\ServerPing`. Accepts one connection at a time; processes one JSON message per connection. |
@@ -123,7 +123,7 @@ Windows Terminal settings location:
 - **Runtime state preservation:** `PingService.UpdateServers` only updates Name/Host/IsEnabled from incoming data; Status/LastPingTime/LastLatencyMilliseconds/ConsecutiveFailures are preserved from in-memory state to avoid stale overwrites.
 - **Offline, sound, and tray alert state:** Each server enters `Offline` when its consecutive failures reach the user-configured threshold, and leaves `Offline` on a successful ping. Offline sound plays per server when it enters `Offline`. The tray alert icon is active whenever any enabled server is `Offline`. Detailed state variables, events, and transitions are documented in `DOCS/tray-state-machine.md`.
 - **Pause/Resume:** `PingService.Pause()` stops all timers; `Resume()` restarts them. Wired from `TrayService.MonitoringToggleRequested`.
-- **Local network detection:** `LocalNetworkMonitor` caches local network status and runs its expensive Windows network-interface detection on a 10-second timer only when servers exist and all are disabled. When at least one server is enabled, detection is stopped and status is reset to `Unknown`; when no servers exist, status is reset to `Disabled`. These states avoid per-ping network-interface enumeration. If cached status is `NoNetwork`, ping attempts are skipped and no success/failure stats or consecutive failures are recorded.
+- **Local network detection:** `LocalNetworkMonitor` caches local network status and runs its expensive Windows network-interface detection on a 10-second timer only when monitoring is active and every enabled server is `Offline`. With no servers or no enabled servers, status is `Disabled`; with enabled servers that are not all `Offline`, status is `Unknown`. These states avoid per-ping network-interface enumeration. If cached status is `NoNetwork`, ping attempts are skipped and no success/failure stats or consecutive failures are recorded.
 - **GUI title status:** The title bar reads `GetStatus` for enabled-server counts. `NoNetwork` local network status takes display priority over the connected online count.
 
 ## Development Commands
@@ -185,7 +185,7 @@ All core features complete:
 - ✅ System tray icon with live server status and availability %
 - ✅ Tray alert icon based on enabled `Offline` servers, with per-server offline sound (see `DOCS/tray-state-machine.md`)
 - ✅ Tray Pause/Resume monitoring toggle
-- ✅ Cached local network detection when servers exist and all are disabled; enabled-server state reports `Unknown`, no-server state reports `Disabled`, and cached `NoNetwork` skips ping/stat recording
+- ✅ Cached local network detection only when monitoring is active and every enabled server is `Offline`; no-server/no-enabled-server state reports `Disabled`, normal enabled-server state reports `Unknown`, and cached `NoNetwork` skips ping/stat recording
 - ✅ Named Pipe IPC (Service ↔ GUI)
 - ✅ WPF management panel (MVVM, add/delete/enable-disable/real-time status)
 - ✅ Server list name sorting (Auto / A-Z / Z-A) with GUI-persisted custom drag/drop order

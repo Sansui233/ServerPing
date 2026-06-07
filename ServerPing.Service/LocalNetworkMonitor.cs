@@ -29,7 +29,7 @@ public class LocalNetworkMonitor : IDisposable
 
     public bool IsAvailable => Status != LocalNetworkStatus.NoNetwork;
 
-    public void UpdateMonitoringContext(bool hasServers, bool hasEnabledServers)
+    public void UpdateMonitoringContext(bool hasServers, bool hasEnabledServers, bool shouldDetectNetwork)
     {
         var changed = false;
 
@@ -38,24 +38,24 @@ public class LocalNetworkMonitor : IDisposable
             if (_disposed)
                 return;
 
-            if (!hasServers)
+            if (!hasServers || !hasEnabledServers)
             {
                 StopDetectionNoLock();
                 changed = SetStatusNoLock(LocalNetworkStatus.Disabled);
             }
-            else if (hasEnabledServers)
+            else if (shouldDetectNetwork)
+            {
+                StartDetectionNoLock();
+            }
+            else
             {
                 StopDetectionNoLock();
                 changed = SetStatusNoLock(LocalNetworkStatus.Unknown);
             }
-            else
-            {
-                StartDetectionNoLock();
-            }
         }
 
         if (changed)
-            StatusChanged?.Invoke(this, EventArgs.Empty);
+            RaiseStatusChanged();
     }
 
     private void StartDetectionNoLock()
@@ -95,7 +95,12 @@ public class LocalNetworkMonitor : IDisposable
         }
 
         if (changed)
-            StatusChanged?.Invoke(this, EventArgs.Empty);
+            RaiseStatusChanged();
+    }
+
+    private void RaiseStatusChanged()
+    {
+        ThreadPool.QueueUserWorkItem(_ => StatusChanged?.Invoke(this, EventArgs.Empty));
     }
 
     private bool SetStatusNoLock(LocalNetworkStatus newStatus)

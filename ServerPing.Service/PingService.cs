@@ -196,6 +196,8 @@ public class PingService : IDisposable
                         PreviousStatus = previousStatus
                     });
                 }
+
+                UpdateLocalNetworkContextNoLock();
             }
         }
         catch
@@ -225,6 +227,8 @@ public class PingService : IDisposable
                         });
                     }
                 }
+
+                UpdateLocalNetworkContextNoLock();
             }
         }
         finally
@@ -384,9 +388,28 @@ public class PingService : IDisposable
 
     private void UpdateLocalNetworkContextNoLock()
     {
+        var hasEnabledServers = false;
+        var allEnabledServersAreOffline = true;
+
+        foreach (var server in _servers.Values)
+        {
+            if (!server.IsEnabled)
+                continue;
+
+            hasEnabledServers = true;
+            if (server.Status == ServerStatus.Offline)
+                continue;
+
+            allEnabledServersAreOffline = false;
+            break;
+        }
+
         _localNetworkMonitor.UpdateMonitoringContext(
             hasServers: _servers.Count > 0,
-            hasEnabledServers: _servers.Values.Any(s => s.IsEnabled));
+            hasEnabledServers: hasEnabledServers,
+            shouldDetectNetwork: !_isPaused
+                && hasEnabledServers
+                && allEnabledServersAreOffline);
     }
 }
 
