@@ -117,7 +117,7 @@ void RefreshTrayStatus()
     var onlineCount = servers.Count(s => s.Status == ServerStatus.Online);
     isTrayAlertActive = ShouldShowAlertState(servers);
 
-    trayService.UpdateStatus(onlineCount, servers.Count, isTrayAlertActive);
+    trayService.UpdateStatus(servers, onlineCount, servers.Count, isTrayAlertActive);
 }
 
 static bool ShouldShowAlertState(IEnumerable<Server> servers) =>

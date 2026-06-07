@@ -39,6 +39,7 @@ public class PingService : IDisposable
             }
 
             var serverIds = new List<string>();
+            var serversToStart = new List<Server>();
             _serverOrder.Clear();
             foreach (var server in servers)
             {
@@ -51,11 +52,17 @@ public class PingService : IDisposable
 
                 if (server.IsEnabled)
                 {
-                    StartPinging(server);
+                    serversToStart.Add(server);
                 }
             }
 
             _statsFileManager.LoadOnStartup(serverIds);
+            UpdateLocalNetworkContextNoLock();
+
+            foreach (var server in serversToStart)
+            {
+                StartPinging(server);
+            }
         }
     }
 
@@ -63,6 +70,7 @@ public class PingService : IDisposable
     {
         lock (_lock)
         {
+            var serversToStart = new List<Server>();
             var existingIds = _servers.Keys.ToHashSet();
             var newIds = servers.Select(s => s.Id).ToHashSet();
 
@@ -91,7 +99,7 @@ public class PingService : IDisposable
                     existing.IsEnabled = server.IsEnabled;
 
                     if (server.IsEnabled && !wasEnabled)
-                        StartPinging(existing);
+                        serversToStart.Add(existing);
                     else if (!server.IsEnabled && wasEnabled)
                         StopPinging(server.Id);
                 }
@@ -100,8 +108,15 @@ public class PingService : IDisposable
                     _servers[server.Id] = server;
                     _minuteBuffers.TryAdd(server.Id, new MinuteRingBuffer());
                     if (server.IsEnabled)
-                        StartPinging(server);
+                        serversToStart.Add(server);
                 }
+            }
+
+            UpdateLocalNetworkContextNoLock();
+
+            foreach (var server in serversToStart)
+            {
+                StartPinging(server);
             }
         }
 
@@ -138,7 +153,7 @@ public class PingService : IDisposable
 
         try
         {
-            if (!_localNetworkMonitor.Refresh())
+            if (!_localNetworkMonitor.IsAvailable)
                 return;
 
             using var pinger = new Ping();
@@ -301,6 +316,7 @@ public class PingService : IDisposable
             _isPaused = true;
             foreach (var id in _timers.Keys.ToList())
                 StopPinging(id);
+            UpdateLocalNetworkContextNoLock();
         }
     }
 
@@ -310,6 +326,7 @@ public class PingService : IDisposable
         {
             if (!_isPaused) return;
             _isPaused = false;
+            UpdateLocalNetworkContextNoLock();
             foreach (var server in _servers.Values.Where(s => s.IsEnabled))
                 StartPinging(server);
         }
@@ -362,6 +379,14 @@ public class PingService : IDisposable
         }
 
         _statsFileManager.Dispose();
+        _localNetworkMonitor.Dispose();
+    }
+
+    private void UpdateLocalNetworkContextNoLock()
+    {
+        _localNetworkMonitor.UpdateMonitoringContext(
+            hasServers: _servers.Count > 0,
+            hasEnabledServers: _servers.Values.Any(s => s.IsEnabled));
     }
 }
 

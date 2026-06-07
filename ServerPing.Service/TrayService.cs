@@ -219,13 +219,11 @@ public class TrayService : IDisposable
         _isAlertIconActive = hasOfflineServers;
     }
 
-    public void UpdateStatus(int onlineCount, int totalCount, bool isAlertActive)
+    public void UpdateStatus(IReadOnlyList<Server> servers, int onlineCount, int totalCount, bool isAlertActive)
     {
-        var servers = _getServers();
         ApplyTrayIcon(isAlertActive);
 
-        var availability = AverageAvailability(servers
-            .Select(server => _getLastHourAvailability(server.Id)));
+        var availability = AverageAvailability(servers);
         var text = string.Format(
             T("Tray.Tooltip"),
             onlineCount,
@@ -264,10 +262,22 @@ public class TrayService : IDisposable
     private static string FormatAvailability(double? availability) =>
         availability.HasValue ? $"{availability.Value:0.#}%" : "--";
 
-    private static double? AverageAvailability(IEnumerable<double?> values)
+    private double? AverageAvailability(IEnumerable<Server> servers)
     {
-        var availableValues = values.Where(v => v.HasValue).Select(v => v!.Value).ToList();
-        return availableValues.Count == 0 ? null : availableValues.Average();
+        var total = 0d;
+        var count = 0;
+
+        foreach (var server in servers)
+        {
+            var availability = _getLastHourAvailability(server.Id);
+            if (!availability.HasValue)
+                continue;
+
+            total += availability.Value;
+            count++;
+        }
+
+        return count == 0 ? null : total / count;
     }
 
     [DllImport("user32.dll")]
