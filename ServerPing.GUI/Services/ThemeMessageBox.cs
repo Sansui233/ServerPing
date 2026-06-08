@@ -12,7 +12,7 @@ public static class ThemeMessageBox
             .FirstOrDefault(w => w.IsActive)
             ?? Application.Current.MainWindow;
 
-        if (owner != null)
+        if (owner != null && owner != dialog)
             dialog.Owner = owner;
 
         dialog.ShowDialog();

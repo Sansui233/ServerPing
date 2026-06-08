@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using ServerPing.GUI.Models;
 using ServerPing.GUI.Services;
 using ServerPing.GUI.ViewModels;
@@ -13,10 +14,12 @@ namespace ServerPing.GUI.Views.ServerList;
 public partial class ServerListView : UserControl
 {
     private MainViewModel? ViewModel => DataContext as MainViewModel;
+    private readonly List<DataGridRow> _pendingEntranceRows = [];
     private Point? _dragStartPoint;
     private ServerViewModel? _draggedServer;
     private int _dropInsertIndex = -1;
     private double? _dropIndicatorY;
+    private bool _isEntranceAnimationScheduled;
 
     public ServerListView()
     {
@@ -31,6 +34,63 @@ public partial class ServerListView : UserControl
         HostColumnHeaderText.Text = LocalizationService.Get("Main.Host");
         LatencyColumn.Header = LocalizationService.Get("Main.Latency");
         ActionsColumn.Header = LocalizationService.Get("Main.Actions");
+    }
+
+    private void ServerRow_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not DataGridRow row)
+            return;
+
+        row.BeginAnimation(OpacityProperty, null);
+        row.Opacity = 0;
+        row.RenderTransform = new TranslateTransform { Y = 5 };
+
+        _pendingEntranceRows.Add(row);
+        if (_isEntranceAnimationScheduled)
+            return;
+
+        _isEntranceAnimationScheduled = true;
+        Dispatcher.BeginInvoke(PlayPendingEntranceAnimations, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
+
+    private void PlayPendingEntranceAnimations()
+    {
+        _isEntranceAnimationScheduled = false;
+
+        var rows = _pendingEntranceRows
+            .Where(row => row.IsLoaded && row.Item is ServerViewModel)
+            .OrderBy(row => row.GetIndex())
+            .ToList();
+        _pendingEntranceRows.Clear();
+
+        for (var i = 0; i < rows.Count; i++)
+            PlayEntranceAnimation(rows[i], i);
+    }
+
+    private static void PlayEntranceAnimation(DataGridRow row, int index)
+    {
+        var delay = TimeSpan.FromMilliseconds(Math.Min(index * 28, 180));
+        var transform = row.RenderTransform as TranslateTransform ?? new TranslateTransform { Y = 5 };
+        row.RenderTransform = transform;
+
+        var opacityAnimation = new DoubleAnimation
+        {
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(140),
+            BeginTime = delay,
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        var translateAnimation = new DoubleAnimation
+        {
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(170),
+            BeginTime = delay,
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        row.BeginAnimation(OpacityProperty, opacityAnimation);
+        transform.BeginAnimation(TranslateTransform.YProperty, translateAnimation);
     }
 
     private void ServerDataGrid_Sorting(object sender, DataGridSortingEventArgs e)

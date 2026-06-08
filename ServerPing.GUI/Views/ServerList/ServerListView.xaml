@@ -26,6 +26,12 @@
                   DragLeave="ServerDataGrid_DragLeave"
                   Drop="ServerDataGrid_Drop"
                   Sorting="ServerDataGrid_Sorting">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <Setter Property="Opacity" Value="0" />
+                    <EventSetter Event="Loaded" Handler="ServerRow_Loaded" />
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <!-- Status dot -->
                 <DataGridTemplateColumn Width="28" CanUserResize="False">
@@ -46,7 +52,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- Name -->
-                <DataGridTemplateColumn x:Name="NameColumn" Width="Auto" MaxWidth="160" SortMemberPath="Name">
+                <DataGridTemplateColumn x:Name="NameColumn" MinWidth="72" MaxWidth="160" SortMemberPath="Name">
                     <DataGridTemplateColumn.HeaderStyle>
                         <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
                             <Setter Property="Cursor" Value="Hand" />

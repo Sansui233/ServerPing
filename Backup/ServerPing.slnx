@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="ServerPing.GUI/ServerPing.GUI.csproj" />
-  <Project Path="ServerPing.Service/ServerPing.Service.csproj" />
-  <Project Path="ServerPing.Shared/ServerPing.Shared.csproj" />
-</Solution>
